@@ -1,0 +1,329 @@
+"use client"
+
+import type React from "react"
+
+import { useEffect, useState } from "react"
+import { createClient } from "@/lib/client"
+import { getExtractedData } from "@/lib/edge-functions"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import Link from "next/link"
+import { useRouter, useParams } from "next/navigation"
+import { ArrowLeft, Plus, Eye, Trash2 } from "lucide-react"
+import Navbar from "@/components/navbar"
+import FieldValidationModal from "@/components/field-validation-modal"
+
+interface ExtractedField {
+  id: string
+  fieldId: string
+  fieldName: string
+  fieldType: string
+  fieldDescription: string
+  value: string
+  confidence: number | null
+}
+
+interface Document {
+  id: string
+  name: string
+  storagePath: string
+  status: string
+  createdAt: string
+  processedAt: string | null
+}
+
+export default function DocumentDetailPage() {
+  const params = useParams()
+  const documentId = params.id as string
+  const [document, setDocument] = useState<Document | null>(null)
+  const [fields, setFields] = useState<ExtractedField[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [newFieldName, setNewFieldName] = useState("")
+  const [selectedField, setSelectedField] = useState<ExtractedField | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const router = useRouter()
+  const supabase = createClient()
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        if (!user) {
+          router.push("/auth/login")
+          return
+        }
+
+        // Fetch document and extracted fields via edge function
+        const { data: extractedData, error } = await getExtractedData(documentId)
+
+        if (error) {
+          console.error("Failed to fetch data:", error)
+          return
+        }
+
+        if (extractedData) {
+          setDocument(extractedData.document)
+          setFields(extractedData.extractedFields || [])
+        }
+      } catch (error) {
+        console.error("Failed to fetch data:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [documentId])
+
+  const handleAddField = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newFieldName.trim()) return
+
+    try {
+      // Insert into document_fields table
+      const { data: fieldData, error: fieldError } = await supabase
+        .from("document_fields")
+        .insert({
+          document_id: documentId,
+          name: newFieldName,
+          type: "text",
+          description: `User-added field: ${newFieldName}`,
+        })
+        .select()
+        .single()
+
+      if (fieldError) throw fieldError
+
+      // Create a new extracted field entry with empty value
+      const newField: ExtractedField = {
+        id: fieldData.id,
+        fieldId: fieldData.id,
+        fieldName: fieldData.name,
+        fieldType: fieldData.type,
+        fieldDescription: fieldData.description,
+        value: "",
+        confidence: null,
+      }
+
+      setFields([...fields, newField])
+      setNewFieldName("")
+    } catch (error) {
+      console.error("Failed to add field:", error)
+    }
+  }
+
+  const handleDeleteField = async (fieldId: string) => {
+    if (!window.confirm("Delete this field?")) return
+
+    try {
+      // Delete from extracted_data first (cascade should handle this, but being explicit)
+      await supabase.from("extracted_data").delete().eq("field_id", fieldId)
+      
+      // Delete from document_fields
+      const { error } = await supabase.from("document_fields").delete().eq("id", fieldId)
+
+      if (error) throw error
+      setFields(fields.filter((f) => f.fieldId !== fieldId))
+    } catch (error) {
+      console.error("Failed to delete field:", error)
+    }
+  }
+
+  const handleFieldValueChange = async (fieldId: string, newValue: string) => {
+    try {
+      // Check if extracted_data record exists
+      const { data: existingData } = await supabase
+        .from("extracted_data")
+        .select("id")
+        .eq("document_id", documentId)
+        .eq("field_id", fieldId)
+        .single()
+
+      if (existingData) {
+        // Update existing record
+        const { error } = await supabase
+          .from("extracted_data")
+          .update({ value: newValue })
+          .eq("document_id", documentId)
+          .eq("field_id", fieldId)
+
+        if (error) throw error
+      } else {
+        // Insert new record
+        const { error } = await supabase
+          .from("extracted_data")
+          .insert({
+            document_id: documentId,
+            field_id: fieldId,
+            value: newValue,
+            confidence: null,
+          })
+
+        if (error) throw error
+      }
+
+      // Update UI
+      setFields(fields.map((f) => (f.fieldId === fieldId ? { ...f, value: newValue } : f)))
+    } catch (error) {
+      console.error("Failed to update field:", error)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex items-center justify-center h-96">
+          <p className="text-muted-foreground">Loading document...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!document) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex items-center justify-center h-96">
+          <p className="text-muted-foreground">Document not found</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-linear-to-b from-background to-muted">
+      <Navbar />
+
+      <div className="max-w-6xl mx-auto px-6 py-10">
+        {/* Header */}
+        <Link href="/dashboard" className="flex items-center gap-2 text-primary hover:underline mb-6">
+          <ArrowLeft className="h-4 w-4" />
+          Back to Documents
+        </Link>
+
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">{document.name}</h1>
+          <p className="text-muted-foreground">Extracted Fields: {fields.length}</p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Fields Column */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Add New Field */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Add Field</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleAddField} className="flex gap-2">
+                  <Input
+                    placeholder="Field name (e.g., Invoice Number)"
+                    value={newFieldName}
+                    onChange={(e) => setNewFieldName(e.target.value)}
+                  />
+                  <Button type="submit" className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            {/* Extracted Fields */}
+            <div className="space-y-3">
+              {fields.length === 0 ? (
+                <Card>
+                  <CardContent className="py-8 text-center text-muted-foreground">
+                    No fields extracted yet. Add a field to get started.
+                  </CardContent>
+                </Card>
+              ) : (
+                fields.map((field) => (
+                  <Card key={field.id} className="hover:shadow-md transition">
+                    <CardContent className="py-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-muted-foreground mb-2">{field.fieldName}</p>
+                          <p className="text-base font-medium wrap-break-word">{field.value || "Not extracted"}</p>
+                          {field.confidence && (
+                            <p className="text-xs text-muted-foreground mt-2">
+                              Confidence: {(field.confidence * 100).toFixed(0)}%
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex gap-2 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedField(field)
+                              setIsModalOpen(true)
+                            }}
+                            className="gap-2"
+                          >
+                            <Eye className="h-4 w-4" />
+                            View
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteField(field.id)}
+                            className="text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Document Preview Sidebar */}
+          <div>
+            <Card className="sticky top-20">
+              <CardHeader>
+                <CardTitle className="text-lg">Document Preview</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {document.storagePath?.endsWith(".pdf") ? (
+                  <div className="w-full h-96 bg-muted rounded-lg flex items-center justify-center">
+                    <p className="text-sm text-muted-foreground text-center">
+                      PDF preview available when viewing field validation
+                    </p>
+                  </div>
+                ) : (
+                  <img
+                    src={document.storagePath || "/placeholder.svg"}
+                    alt="Document preview"
+                    className="w-full h-96 object-cover rounded-lg"
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+
+      {/* Validation Modal */}
+      {selectedField && (
+        <FieldValidationModal
+          isOpen={isModalOpen}
+          field={selectedField}
+          documentUrl={document.storagePath}
+          onClose={() => {
+            setIsModalOpen(false)
+            setSelectedField(null)
+          }}
+          onFieldValueChange={handleFieldValueChange}
+        />
+      )}
+    </div>
+  )
+}

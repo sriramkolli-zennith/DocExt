@@ -1,36 +1,218 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DocExt UpperModel - Document Extraction Platform
 
-## Getting Started
+A Next.js application powered by Supabase Edge Functions and Azure Document Intelligence for intelligent document processing and field extraction.
 
-First, run the development server:
+## 🚀 Features
+
+- **Document Upload & Processing**: Upload PDFs and images for intelligent field extraction
+- **Azure Document Intelligence**: Leverages Azure's prebuilt invoice model for accurate data extraction
+- **Supabase Backend**: Serverless edge functions for scalable backend processing
+- **Authentication**: Secure user authentication with Supabase Auth
+- **Real-time Dashboard**: View and manage your processed documents
+- **Field Extraction**: Extract custom fields from documents with confidence scores
+
+## 📚 Documentation
+
+- **[Quick Start Guide](./QUICKSTART.md)** - Get up and running quickly
+- **[Migration Guide](./SUPABASE_MIGRATION.md)** - Detailed migration documentation
+- **[Architecture Overview](./ARCHITECTURE.md)** - System architecture diagrams
+- **[Deployment Guide](./supabase/DEPLOYMENT.md)** - Edge function deployment
+
+## 🛠️ Tech Stack
+
+- **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS
+- **Backend**: Supabase Edge Functions (Deno)
+- **Database**: Supabase (PostgreSQL)
+- **Storage**: Supabase Storage
+- **AI/ML**: Azure Document Intelligence
+- **Authentication**: Supabase Auth
+
+## 📦 Prerequisites
+
+- Node.js 18+ and npm
+- Supabase account and project
+- Azure Document Intelligence resource
+- Supabase CLI installed globally
+
+## 🚀 Quick Start
+
+### 1. Install Dependencies
+
+```bash
+npm install
+```
+
+### 2. Install Supabase CLI
+
+```bash
+npm install -g supabase
+```
+
+### 3. Setup Supabase
+
+```bash
+# Login to Supabase
+npm run supabase:login
+
+# Link to your project
+npm run supabase:link
+```
+
+### 4. Deploy Edge Functions
+
+**Windows:**
+```bash
+deploy-functions.bat
+```
+
+**Manual:**
+```bash
+# Set secrets
+supabase secrets set AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT=https://docext.cognitiveservices.azure.com/
+supabase secrets set AZURE_DOCUMENT_INTELLIGENCE_API_KEY=your_key_here
+supabase secrets set AZURE_DOCUMENT_INTELLIGENCE_MODEL_ID=prebuilt-invoice
+supabase secrets set GEMINI_API_KEY=your_key_here
+
+# Deploy
+npm run functions:deploy
+```
+
+### 5. Run the Application
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to see your app!
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📝 Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Create a `.env.local` file:
 
-## Learn More
+```env
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 
-To learn more about Next.js, take a look at the following resources:
+# Azure Document Intelligence
+AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT=https://your-resource.cognitiveservices.azure.com/
+AZURE_DOCUMENT_INTELLIGENCE_API_KEY=your_azure_key
+AZURE_DOCUMENT_INTELLIGENCE_MODEL_ID=prebuilt-invoice
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Gemini API (optional)
+GEMINI_API_KEY=your_gemini_key
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🎯 Available Scripts
 
-## Deploy on Vercel
+### Development
+```bash
+npm run dev                    # Start Next.js dev server
+npm run supabase:start        # Start Supabase locally
+npm run supabase:stop         # Stop Supabase
+npm run functions:serve       # Serve edge functions locally
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Deployment
+```bash
+npm run functions:deploy      # Deploy edge functions
+npm run functions:logs        # View function logs
+npm run build                 # Build for production
+npm run start                 # Start production server
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Testing
+```bash
+npm run lint                  # Run ESLint
+```
+
+## 🏗️ Project Structure
+
+```
+my-app/
+├── app/                      # Next.js app directory
+│   ├── auth/                 # Authentication pages
+│   ├── dashboard/            # User dashboard
+│   ├── extract/              # Document extraction page
+│   └── document/             # Document details
+├── components/               # React components
+├── lib/                      # Utility functions
+│   ├── client.ts             # Supabase client
+│   ├── server.ts             # Supabase server
+│   └── edge-functions.ts     # Edge function helper
+├── supabase/
+│   ├── functions/            # Edge functions
+│   │   ├── extract/          # Document extraction function
+│   │   └── _shared/          # Shared utilities
+│   └── config.toml           # Supabase configuration
+└── scripts/                  # Database scripts
+```
+
+## 🔐 Security
+
+- JWT-based authentication
+- Row Level Security (RLS) on database
+- Secure secret management with Supabase
+- API keys stored in edge function secrets
+- User-scoped document access
+
+## 📊 Database Schema
+
+- **users**: User accounts
+- **documents**: Uploaded documents
+- **extracted_fields**: Extracted field data with confidence scores
+
+## 🌐 Edge Functions
+
+### Extract Function
+- **Endpoint**: `https://your-project.supabase.co/functions/v1/extract`
+- **Method**: POST
+- **Auth**: Required (Bearer token)
+- **Payload**:
+  ```json
+  {
+    "documentId": "uuid",
+    "fileUrl": "https://...",
+    "fieldsToExtract": ["InvoiceId", "VendorName", "InvoiceTotal"]
+  }
+  ```
+
+## 🚀 Deployment
+
+### Frontend (Vercel/Netlify)
+```bash
+npm run build
+```
+
+Deploy to Vercel or Netlify following their deployment guides.
+
+### Edge Functions (Supabase)
+```bash
+npm run functions:deploy
+```
+
+## 🐛 Troubleshooting
+
+See [QUICKSTART.md](./QUICKSTART.md#troubleshooting) for common issues and solutions.
+
+## 📖 Learn More
+
+### Next.js
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Learn Next.js](https://nextjs.org/learn)
+
+### Supabase
+- [Supabase Documentation](https://supabase.com/docs)
+- [Edge Functions Guide](https://supabase.com/docs/guides/functions)
+
+### Azure
+- [Azure Document Intelligence](https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/)
+
+## 📄 License
+
+This project is private and proprietary.
+
+## 🤝 Contributing
+
+This is a private project. Please contact the project maintainers for contribution guidelines.
+
