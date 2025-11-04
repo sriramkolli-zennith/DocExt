@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { FileText, LayoutDashboard, User } from "lucide-react"
+import { FileText, LayoutDashboard, User, FileStack, Layout } from "lucide-react"
 import { createClient } from "@/lib/client"
 import { useEffect, useState } from "react"
 
@@ -38,7 +38,21 @@ export default function Navbar() {
             <span className="text-sm">Dashboard</span>
           </Link>
           <Link
-            href="/profile"
+            href="/documents"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition"
+          >
+            <FileStack className="h-4 w-4" />
+            <span className="text-sm">Documents</span>
+          </Link>
+          <Link
+            href="/templates"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition"
+          >
+            <Layout className="h-4 w-4" />
+            <span className="text-sm">Templates</span>
+          </Link>
+          <Link
+            href="/account/profile"
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition"
           >
             <User className="h-4 w-4" />

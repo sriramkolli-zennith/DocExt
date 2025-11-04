@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/client"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Plus, FileText } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Plus, FileText, TrendingUp, CheckCircle2, Clock } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import Navbar from "@/components/navbar"
 import DocumentCard from "@/components/document-card"
+
+export const dynamic = "force-dynamic"
 
 interface Document {
   id: string
@@ -19,19 +21,26 @@ interface Document {
   processed_at: string | null
 }
 
+interface Stats {
+  total: number
+  completed: number
+  processing: number
+  failed: number
+  successRate: number
+}
+
 export default function DashboardPage() {
   const [documents, setDocuments] = useState<Document[]>([])
+  const [stats, setStats] = useState<Stats>({ total: 0, completed: 0, processing: 0, failed: 0, successRate: 0 })
   const [isLoading, setIsLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
-    const fetchDocuments = async () => {
+    const fetchData = async () => {
       try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
+        const { data: { user } } = await supabase.auth.getUser()
         if (!user) {
           router.push("/auth/login")
           return
@@ -46,20 +55,29 @@ export default function DashboardPage() {
 
         if (error) {
           console.error("Database error:", error.message || error)
-          // Don't throw, just set empty array
           setDocuments([])
         } else {
-          setDocuments(data || [])
+          const docs = data || []
+          setDocuments(docs)
+
+          // Calculate stats
+          const completed = docs.filter(d => d.status === "completed").length
+          const processing = docs.filter(d => d.status === "processing").length
+          const failed = docs.filter(d => d.status === "failed").length
+          const total = docs.length
+          const successRate = total > 0 ? (completed / total) * 100 : 0
+
+          setStats({ total, completed, processing, failed, successRate })
         }
       } catch (error) {
-        console.error("Failed to fetch documents:", error)
+        console.error("Failed to fetch data:", error)
         setDocuments([])
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchDocuments()
+    fetchData()
   }, [])
 
   const handleDelete = async (documentId: string) => {
@@ -67,13 +85,25 @@ export default function DashboardPage() {
 
     try {
       const { error } = await supabase.from("documents").delete().eq("id", documentId)
-
       if (error) throw error
       setDocuments(documents.filter((doc) => doc.id !== documentId))
     } catch (error) {
       console.error("Failed to delete document:", error)
     }
   }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-linear-to-b from-background to-muted">
+        <Navbar />
+        <div className="flex items-center justify-center h-96">
+          <p className="text-muted-foreground">Loading dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  const recentDocs = documents.slice(0, 3)
 
   return (
     <div className="min-h-screen bg-linear-to-b from-background to-muted">
@@ -83,8 +113,8 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Documents</h1>
-            <p className="text-muted-foreground">Manage and extract data from your documents</p>
+            <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
+            <p className="text-muted-foreground">Overview of your document extraction activity</p>
           </div>
           <Link href="/extract">
             <Button size="lg" className="gap-2">
@@ -94,32 +124,160 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {/* Documents Grid */}
-        {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <p className="text-muted-foreground">Loading documents...</p>
-          </div>
-        ) : documents.length === 0 ? (
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <Card>
-            <CardContent className="flex flex-col items-center justify-center py-20">
-              <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No documents yet</h3>
-              <p className="text-muted-foreground mb-4">Start by uploading a document to extract data</p>
-              <Link href="/extract">
-                <Button className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Create Your First Extraction
-                </Button>
-              </Link>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Documents</p>
+                  <p className="text-2xl font-bold">{stats.total}</p>
+                </div>
+                <FileText className="h-8 w-8 text-primary" />
+              </div>
             </CardContent>
           </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {documents.map((doc) => (
-              <DocumentCard key={doc.id} document={doc} onDelete={handleDelete} />
-            ))}
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Completed</p>
+                  <p className="text-2xl font-bold">{stats.completed}</p>
+                </div>
+                <CheckCircle2 className="h-8 w-8 text-green-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Processing</p>
+                  <p className="text-2xl font-bold">{stats.processing}</p>
+                </div>
+                <Clock className="h-8 w-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Success Rate</p>
+                  <p className="text-2xl font-bold">{stats.successRate.toFixed(0)}%</p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-purple-500" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Recent Uploads & Quick Links */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Recent Uploads */}
+          <div className="lg:col-span-2">
+            <h2 className="text-xl font-semibold mb-4">Recent Uploads</h2>
+            {recentDocs.length === 0 ? (
+              <Card>
+                <CardContent className="py-8 text-center text-muted-foreground">
+                  No documents yet. Start your first extraction!
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {recentDocs.map((doc) => (
+                  <Link key={doc.id} href={`/documents/${doc.id}`}>
+                    <Card className="hover:shadow-md transition cursor-pointer">
+                      <CardContent className="py-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <p className="font-medium line-clamp-1">{doc.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {new Date(doc.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            doc.status === "completed" ? "bg-green-100 text-green-700" :
+                            doc.status === "processing" ? "bg-blue-100 text-blue-700" :
+                            doc.status === "failed" ? "bg-red-100 text-red-700" :
+                            "bg-gray-100 text-gray-700"
+                          }`}>
+                            {doc.status}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
-        )}
+
+          {/* Quick Links */}
+          <div>
+            <h2 className="text-xl font-semibold mb-4">Quick Links</h2>
+            <div className="space-y-3">
+              <Link href="/extract" className="block">
+                <Card className="hover:shadow-md transition cursor-pointer">
+                  <CardContent className="py-4">
+                    <p className="font-medium flex items-center gap-2">
+                      <Plus className="h-4 w-4" />
+                      New Extraction
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+
+              <Link href="/documents" className="block">
+                <Card className="hover:shadow-md transition cursor-pointer">
+                  <CardContent className="py-4">
+                    <p className="font-medium flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      All Documents
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+
+              <Link href="/account/profile" className="block">
+                <Card className="hover:shadow-md transition cursor-pointer">
+                  <CardContent className="py-4">
+                    <p className="font-medium">Profile Settings</p>
+                  </CardContent>
+                </Card>
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* All Documents */}
+        <div className="mt-12">
+          <h2 className="text-xl font-semibold mb-4">All Documents</h2>
+          {documents.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No documents yet</h3>
+                <p className="text-muted-foreground mb-6">Start by uploading a document to extract data</p>
+                <Link href="/extract">
+                  <Button className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Create Your First Extraction
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {documents.map((doc) => (
+                <DocumentCard key={doc.id} document={doc} onDelete={handleDelete} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

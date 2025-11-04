@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   generator: "v0.app",
 }
 
+// Skip static generation for entire app due to Supabase client initialization in middleware
+export const dynamic = "force-dynamic"
+
 export default function RootLayout({
   children,
 }: Readonly<{

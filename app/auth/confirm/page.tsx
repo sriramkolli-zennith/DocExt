@@ -8,6 +8,8 @@ import { FileText, CheckCircle2, XCircle, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
+export const dynamic = "force-dynamic"
+
 function ConfirmContent() {
   const router = useRouter()
   const searchParams = useSearchParams()

@@ -9,6 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Upload, Plus, X, Loader2, FileText, Sparkles, ChevronDown, ChevronUp } from "lucide-react"
+
+export const dynamic = "force-dynamic"
 import { useRouter } from "next/navigation"
 import Navbar from "@/components/navbar"
 

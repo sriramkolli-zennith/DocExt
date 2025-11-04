@@ -1,16 +1,16 @@
 "use client"
 
-import type React from "react"
-
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/client"
 import { getExtractedData } from "@/lib/edge-functions"
 import { Button } from "@/components/ui/button"
+
+export const dynamic = "force-dynamic"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
 import { useRouter, useParams } from "next/navigation"
-import { ArrowLeft, Plus, Eye, Trash2 } from "lucide-react"
+import { ArrowLeft, Plus, Eye, Trash2, Download, RotateCcw } from "lucide-react"
 import Navbar from "@/components/navbar"
 import FieldValidationModal from "@/components/field-validation-modal"
 
@@ -46,44 +46,40 @@ export default function DocumentDetailPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
-        if (!user) {
-          router.push("/auth/login")
-          return
-        }
-
-        // Fetch document and extracted fields via edge function
-        const { data: extractedData, error } = await getExtractedData(documentId)
-
-        if (error) {
-          console.error("Failed to fetch data:", error)
-          return
-        }
-
-        if (extractedData) {
-          setDocument(extractedData.document)
-          setFields(extractedData.extractedFields || [])
-        }
-      } catch (error) {
-        console.error("Failed to fetch data:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
     fetchData()
   }, [documentId])
+
+  const fetchData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.push("/auth/login")
+        return
+      }
+
+      const { data: extractedData, error } = await getExtractedData(documentId)
+
+      if (error) {
+        console.error("Failed to fetch data:", error)
+        return
+      }
+
+      if (extractedData) {
+        setDocument(extractedData.document)
+        setFields(extractedData.extractedFields || [])
+      }
+    } catch (error) {
+      console.error("Failed to fetch data:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const handleAddField = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newFieldName.trim()) return
 
     try {
-      // Insert into document_fields table
       const { data: fieldData, error: fieldError } = await supabase
         .from("document_fields")
         .insert({
@@ -97,7 +93,6 @@ export default function DocumentDetailPage() {
 
       if (fieldError) throw fieldError
 
-      // Create a new extracted field entry with empty value
       const newField: ExtractedField = {
         id: fieldData.id,
         fieldId: fieldData.id,
@@ -119,10 +114,7 @@ export default function DocumentDetailPage() {
     if (!window.confirm("Delete this field?")) return
 
     try {
-      // Delete from extracted_data first (cascade should handle this, but being explicit)
       await supabase.from("extracted_data").delete().eq("field_id", fieldId)
-      
-      // Delete from document_fields
       const { error } = await supabase.from("document_fields").delete().eq("id", fieldId)
 
       if (error) throw error
@@ -134,7 +126,6 @@ export default function DocumentDetailPage() {
 
   const handleFieldValueChange = async (fieldId: string, newValue: string) => {
     try {
-      // Check if extracted_data record exists
       const { data: existingData } = await supabase
         .from("extracted_data")
         .select("id")
@@ -143,7 +134,6 @@ export default function DocumentDetailPage() {
         .single()
 
       if (existingData) {
-        // Update existing record
         const { error } = await supabase
           .from("extracted_data")
           .update({ value: newValue })
@@ -152,7 +142,6 @@ export default function DocumentDetailPage() {
 
         if (error) throw error
       } else {
-        // Insert new record
         const { error } = await supabase
           .from("extracted_data")
           .insert({
@@ -165,10 +154,32 @@ export default function DocumentDetailPage() {
         if (error) throw error
       }
 
-      // Update UI
       setFields(fields.map((f) => (f.fieldId === fieldId ? { ...f, value: newValue } : f)))
     } catch (error) {
       console.error("Failed to update field:", error)
+    }
+  }
+
+  const handleExportData = () => {
+    const csvContent = [
+      ["Field Name", "Type", "Value", "Confidence"],
+      ...fields.map((f) => [
+        f.fieldName,
+        f.fieldType,
+        f.value,
+        f.confidence ? (f.confidence * 100).toFixed(0) + "%" : "N/A",
+      ]),
+    ]
+      .map((row) => row.map((cell) => `"${cell}"`).join(","))
+      .join("\n")
+
+    const blob = new Blob([csvContent], { type: "text/csv" })
+    const url = URL.createObjectURL(blob)
+    const link = globalThis.document?.createElement("a")
+    if (link) {
+      link.href = url
+      link.download = `${document?.name}-extracted.csv`
+      link.click()
     }
   }
 
@@ -200,14 +211,28 @@ export default function DocumentDetailPage() {
 
       <div className="max-w-6xl mx-auto px-6 py-10">
         {/* Header */}
-        <Link href="/dashboard" className="flex items-center gap-2 text-primary hover:underline mb-6">
+        <Link href="/documents" className="flex items-center gap-2 text-primary hover:underline mb-6">
           <ArrowLeft className="h-4 w-4" />
           Back to Documents
         </Link>
 
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">{document.name}</h1>
-          <p className="text-muted-foreground">Extracted Fields: {fields.length}</p>
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">{document.name}</h1>
+            <p className="text-muted-foreground">
+              Status: <span className="capitalize font-medium">{document.status}</span> • {fields.length} field{fields.length !== 1 ? "s" : ""}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleExportData} disabled={fields.length === 0} className="gap-2 bg-transparent">
+              <Download className="h-4 w-4" />
+              Export
+            </Button>
+            <Button variant="outline" className="gap-2 bg-transparent">
+              <RotateCcw className="h-4 w-4" />
+              Re-run
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -221,7 +246,7 @@ export default function DocumentDetailPage() {
               <CardContent>
                 <form onSubmit={handleAddField} className="flex gap-2">
                   <Input
-                    placeholder="Field name (e.g., Invoice Number)"
+                    placeholder="Field name"
                     value={newFieldName}
                     onChange={(e) => setNewFieldName(e.target.value)}
                   />
@@ -238,7 +263,7 @@ export default function DocumentDetailPage() {
               {fields.length === 0 ? (
                 <Card>
                   <CardContent className="py-8 text-center text-muted-foreground">
-                    No fields extracted yet. Add a field to get started.
+                    No fields extracted yet.
                   </CardContent>
                 </Card>
               ) : (
@@ -248,7 +273,7 @@ export default function DocumentDetailPage() {
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
                           <p className="text-sm font-semibold text-muted-foreground mb-2">{field.fieldName}</p>
-                          <p className="text-base font-medium wrap-break-word">{field.value || "Not extracted"}</p>
+                          <p className="text-base font-medium">{field.value || "Not extracted"}</p>
                           {field.confidence && (
                             <p className="text-xs text-muted-foreground mt-2">
                               Confidence: {(field.confidence * 100).toFixed(0)}%
@@ -285,26 +310,31 @@ export default function DocumentDetailPage() {
             </div>
           </div>
 
-          {/* Document Preview Sidebar */}
+          {/* Document Info Sidebar */}
           <div>
             <Card className="sticky top-20">
               <CardHeader>
-                <CardTitle className="text-lg">Document Preview</CardTitle>
+                <CardTitle className="text-lg">Document Info</CardTitle>
               </CardHeader>
-              <CardContent>
-                {document.storagePath?.endsWith(".pdf") ? (
-                  <div className="w-full h-96 bg-muted rounded-lg flex items-center justify-center">
-                    <p className="text-sm text-muted-foreground text-center">
-                      PDF preview available when viewing field validation
-                    </p>
+              <CardContent className="space-y-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Status</p>
+                  <p className="font-medium capitalize">{document.status}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Created</p>
+                  <p className="font-medium">{new Date(document.createdAt).toLocaleDateString()}</p>
+                </div>
+                {document.processedAt && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Processed</p>
+                    <p className="font-medium">{new Date(document.processedAt).toLocaleDateString()}</p>
                   </div>
-                ) : (
-                  <img
-                    src={document.storagePath || "/placeholder.svg"}
-                    alt="Document preview"
-                    className="w-full h-96 object-cover rounded-lg"
-                  />
                 )}
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Fields</p>
+                  <p className="font-medium">{fields.length}</p>
+                </div>
               </CardContent>
             </Card>
           </div>

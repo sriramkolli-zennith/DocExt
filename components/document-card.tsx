@@ -4,7 +4,6 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Trash2, ChevronRight, FileText, Calendar } from "lucide-react"
-import { format } from "date-fns"
 
 interface DocumentCardProps {
   document: {
@@ -19,7 +18,11 @@ interface DocumentCardProps {
 }
 
 export default function DocumentCard({ document, onDelete }: DocumentCardProps) {
-  const createdDate = new Date(document.created_at)
+  const createdDate = new Date(document.created_at).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  })
 
   return (
     <Card className="hover:shadow-lg transition-shadow group overflow-hidden">
@@ -32,7 +35,7 @@ export default function DocumentCard({ document, onDelete }: DocumentCardProps) 
             </div>
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
               <Calendar className="h-3 w-3" />
-              {format(createdDate, "MMM dd, yyyy")}
+              {createdDate}
             </div>
           </div>
         </div>

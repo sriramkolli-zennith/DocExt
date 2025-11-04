@@ -1,218 +1,371 @@
-# DocExt UpperModel - Document Extraction Platform
+# DocExt - Document Extraction Platform
 
 A Next.js application powered by Supabase Edge Functions and Azure Document Intelligence for intelligent document processing and field extraction.
 
-## 🚀 Features
+## 🎯 Overview
 
-- **Document Upload & Processing**: Upload PDFs and images for intelligent field extraction
-- **Azure Document Intelligence**: Leverages Azure's prebuilt invoice model for accurate data extraction
-- **Supabase Backend**: Serverless edge functions for scalable backend processing
-- **Authentication**: Secure user authentication with Supabase Auth
-- **Real-time Dashboard**: View and manage your processed documents
-- **Field Extraction**: Extract custom fields from documents with confidence scores
+DocExt is a full-stack document extraction platform that allows users to upload documents (PDFs, images) and automatically extract structured data using AI. Features include:
 
-## 📚 Documentation
-
-- **[Quick Start Guide](./QUICKSTART.md)** - Get up and running quickly
-- **[Migration Guide](./SUPABASE_MIGRATION.md)** - Detailed migration documentation
-- **[Architecture Overview](./ARCHITECTURE.md)** - System architecture diagrams
-- **[Deployment Guide](./supabase/DEPLOYMENT.md)** - Edge function deployment
+- **Document Management**: Upload, process, and manage documents
+- **Intelligent Extraction**: Uses Azure Document Intelligence to extract fields
+- **Authentication**: Email and OAuth (Google/GitHub) support
+- **Real-time Dashboard**: View all processed documents and extracted data
+- **Secure Storage**: User-scoped document storage with RLS protection
+- **Field Validation**: Edit and manually correct extracted values
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS
-- **Backend**: Supabase Edge Functions (Deno)
-- **Database**: Supabase (PostgreSQL)
-- **Storage**: Supabase Storage
-- **AI/ML**: Azure Document Intelligence
-- **Authentication**: Supabase Auth
+| Layer | Technology |
+|-------|-----------|
+| **Frontend** | Next.js 16, React 19, TypeScript, Tailwind CSS, Shadcn UI |
+| **Backend** | Supabase Edge Functions (Deno), PostgreSQL |
+| **Storage** | Supabase Storage (PDF/Images) |
+| **Auth** | Supabase Auth (Email, Google OAuth, GitHub OAuth) |
+| **AI/ML** | Azure Document Intelligence (prebuilt-invoice model) |
+| **Database** | PostgreSQL with Row-Level Security (RLS) |
 
-## 📦 Prerequisites
+## 📋 Database Schema
 
+See `DATABASE_SETUP.sql` for complete schema. Key tables:
+
+### Profiles
+- Stores user profile information
+- Auto-created on signup via trigger
+- RLS: Users can only access their own profile
+
+### Documents
+- Stores uploaded documents metadata
+- Status tracking: pending → processing → completed/failed
+- Auto-updates processed_at timestamp when completed
+
+### Document_Fields
+- Defines which fields to extract from each document
+- Flexible field types: text, number, date, email, phone, currency, boolean
+
+### Extracted_Data
+- Stores extracted values with confidence scores
+- Unique constraint on (document_id, field_id) to prevent duplicates
+
+### Storage Buckets
+- `documents` bucket: Stores PDFs and images
+- User-scoped paths: `user_id/filename` format
+- Public read for Azure Document Intelligence processing
+
+## 📁 Project Structure
+
+```
+DocExt/
+├── app/                                    # Next.js app directory
+│   ├── page.tsx                           # Landing page
+│   ├── layout.tsx                         # Root layout
+│   ├── globals.css                        # Global styles
+│   ├── auth/
+│   │   ├── login/page.tsx                # Email + OAuth login
+│   │   ├── sign-up/page.tsx              # Registration
+│   │   ├── confirm/page.tsx              # Email confirmation
+│   │   ├── sign-up-success/page.tsx      # Confirmation message
+│   │   └── callback/route.ts             # OAuth redirect handler
+│   ├── dashboard/page.tsx                 # User's documents list
+│   ├── extract/page.tsx                   # Upload & configure extraction
+│   ├── document/[id]/page.tsx            # Document details & field editing
+│   └── profile/page.tsx                   # User profile settings
+│
+├── components/
+│   ├── navbar.tsx                         # Navigation bar
+│   ├── document-card.tsx                  # Document card component
+│   ├── field-validation-modal.tsx         # Field editing modal
+│   └── ui/                                # Shadcn UI components library
+│
+├── lib/
+│   ├── client.ts                          # Supabase client (browser)
+│   ├── server.ts                          # Supabase client (server)
+│   ├── edge-functions.ts                  # Edge function API helpers
+│   └── utils.ts                           # Utility functions
+│
+├── supabase/
+│   ├── config.toml                        # Supabase local config
+│   ├── functions/
+│   │   ├── upload-document-backend/
+│   │   │   └── index.ts                   # Generate signed upload URLs
+│   │   ├── process-document-backend/
+│   │   │   └── index.ts                   # Call Azure AI & save results
+│   │   ├── get-extracted-data-backend/
+│   │   │   └── index.ts                   # Retrieve extracted data
+│   │   └── _shared/
+│   │       └── cors.ts                    # CORS header utilities
+│   └── DEPLOYMENT.md                      # Edge function deployment guide
+│
+├── public/                                 # Static assets
+├── scripts/
+│   └── 002_create_storage_bucket.sql      # Storage bucket setup (reference)
+│
+├── middleware.ts                           # Auth middleware for protected routes
+├── DATABASE_SETUP.sql                      # Complete database schema & setup
+├── README.md                               # This file
+├── package.json                            # Dependencies & scripts
+├── tsconfig.json                           # TypeScript config
+├── next.config.ts                          # Next.js config
+├── tailwind.config.mjs                     # Tailwind CSS config
+├── postcss.config.mjs                      # PostCSS config
+├── eslint.config.mjs                       # ESLint config
+└── components.json                         # Shadcn UI config
+```
+
+## 🚀 Getting Started
+
+### Prerequisites
 - Node.js 18+ and npm
-- Supabase account and project
+- Supabase account (https://supabase.com)
 - Azure Document Intelligence resource
-- Supabase CLI installed globally
+- Supabase CLI: `npm install -g supabase`
 
-## 🚀 Quick Start
-
-### 1. Install Dependencies
+### 1. Clone & Install
 
 ```bash
+git clone <repo-url>
+cd DocExt
 npm install
 ```
 
-### 2. Install Supabase CLI
-
-```bash
-npm install -g supabase
-```
-
-### 3. Setup Supabase
+### 2. Setup Supabase
 
 ```bash
 # Login to Supabase
 npm run supabase:login
 
 # Link to your project
-npm run supabase:link
+npm run supabase:link --project-ref <your-project-ref>
 ```
 
-### 4. Deploy Edge Functions
+### 3. Setup Database
 
-**Windows:**
-```bash
-deploy-functions.bat
-```
+Run the SQL setup in Supabase SQL Editor:
 
-**Manual:**
-```bash
-# Set secrets
-supabase secrets set AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT=https://docext.cognitiveservices.azure.com/
-supabase secrets set AZURE_DOCUMENT_INTELLIGENCE_API_KEY=your_key_here
-supabase secrets set AZURE_DOCUMENT_INTELLIGENCE_MODEL_ID=prebuilt-invoice
-supabase secrets set GEMINI_API_KEY=your_key_here
-
-# Deploy
-npm run functions:deploy
-```
-
-### 5. Run the Application
+1. Go to Supabase Dashboard → Project → SQL Editor
+2. Copy contents of `DATABASE_SETUP.sql`
+3. Paste and run in SQL Editor
+4. Verify tables were created
 
 ```bash
-npm run dev
+# Alternatively, use Supabase CLI
+supabase db push
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to see your app!
+### 4. Configure Secrets
 
-## 📝 Environment Variables
+Set Edge Function secrets in Supabase:
 
-Create a `.env.local` file:
+```bash
+supabase secrets set \
+  AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT=https://your-region.cognitiveservices.azure.com/ \
+  AZURE_DOCUMENT_INTELLIGENCE_API_KEY=your_api_key \
+  AZURE_DOCUMENT_INTELLIGENCE_MODEL_ID=prebuilt-invoice \
+  GEMINI_API_KEY=your_gemini_key
+```
+
+### 5. Environment Variables
+
+Create `.env.local`:
 
 ```env
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 
-# Azure Document Intelligence
-AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT=https://your-resource.cognitiveservices.azure.com/
-AZURE_DOCUMENT_INTELLIGENCE_API_KEY=your_azure_key
-AZURE_DOCUMENT_INTELLIGENCE_MODEL_ID=prebuilt-invoice
-
-# Gemini API (optional)
-GEMINI_API_KEY=your_gemini_key
+# Development (optional)
+NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL=http://localhost:3000/dashboard
 ```
 
-## 🎯 Available Scripts
+### 6. Run Development Server
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000)
+
+## 📋 Available Commands
 
 ### Development
 ```bash
-npm run dev                    # Start Next.js dev server
-npm run supabase:start        # Start Supabase locally
-npm run supabase:stop         # Stop Supabase
-npm run functions:serve       # Serve edge functions locally
+npm run dev              # Start Next.js dev server (http://localhost:3000)
+npm run build            # Build for production
+npm run start            # Start production server
+npm run lint             # Check code quality with ESLint
 ```
 
-### Deployment
+### Supabase
 ```bash
-npm run functions:deploy      # Deploy edge functions
-npm run functions:logs        # View function logs
-npm run build                 # Build for production
-npm run start                 # Start production server
+npm run supabase:login   # Login to Supabase CLI
+npm run supabase:link    # Link to Supabase project
+npm run supabase:start   # Start local Supabase instance
+npm run supabase:stop    # Stop local Supabase instance
 ```
 
-### Testing
+### Edge Functions
 ```bash
-npm run lint                  # Run ESLint
+npm run functions:serve      # Serve functions locally
+npm run functions:deploy     # Deploy all functions to production
+npm run functions:deploy:upload    # Deploy only upload function
+npm run functions:deploy:process   # Deploy only process function
+npm run functions:deploy:data      # Deploy only data retrieval function
+npm run functions:logs       # View function logs
 ```
 
-## 🏗️ Project Structure
-
-```
-my-app/
-├── app/                      # Next.js app directory
-│   ├── auth/                 # Authentication pages
-│   ├── dashboard/            # User dashboard
-│   ├── extract/              # Document extraction page
-│   └── document/             # Document details
-├── components/               # React components
-├── lib/                      # Utility functions
-│   ├── client.ts             # Supabase client
-│   ├── server.ts             # Supabase server
-│   └── edge-functions.ts     # Edge function helper
-├── supabase/
-│   ├── functions/            # Edge functions
-│   │   ├── extract/          # Document extraction function
-│   │   └── _shared/          # Shared utilities
-│   └── config.toml           # Supabase configuration
-└── scripts/                  # Database scripts
+### Secrets
+```bash
+npm run secrets:set          # Set Edge Function secrets
 ```
 
 ## 🔐 Security
 
-- JWT-based authentication
-- Row Level Security (RLS) on database
-- Secure secret management with Supabase
-- API keys stored in edge function secrets
-- User-scoped document access
+### Authentication
+- Email/password authentication via Supabase Auth
+- OAuth providers: Google, GitHub
+- JWT tokens for API requests
+- Session management via Supabase
 
-## 📊 Database Schema
+### Database Security
+- Row-Level Security (RLS) enabled on all tables
+- Users can only access their own documents
+- Policies prevent cross-user data access
+- Automatic cascading deletes
 
-- **users**: User accounts
-- **documents**: Uploaded documents
-- **extracted_fields**: Extracted field data with confidence scores
+### Storage Security
+- User-scoped paths: `{user_id}/{filename}`
+- Private by default, public only for Azure processing
+- Signed URLs for uploads (5-minute expiry)
+- Middleware protects routes
 
-## 🌐 Edge Functions
+### API Security
+- Edge functions verify JWT tokens
+- CORS headers configured
+- Secrets stored securely (not in code)
+- No sensitive data in client code
 
-### Extract Function
-- **Endpoint**: `https://your-project.supabase.co/functions/v1/extract`
-- **Method**: POST
-- **Auth**: Required (Bearer token)
-- **Payload**:
-  ```json
-  {
-    "documentId": "uuid",
-    "fileUrl": "https://...",
-    "fieldsToExtract": ["InvoiceId", "VendorName", "InvoiceTotal"]
-  }
-  ```
+## 🔄 Data Flow
+
+```
+User Upload
+    ↓
+Frontend validates file
+    ↓
+Edge Function: upload-document-backend
+    ├─ Generates signed upload URL
+    ├─ Returns path & public URL
+    └─ Frontend uploads file
+    ↓
+Frontend calls: process-document-backend
+    ├─ Creates document record (status: processing)
+    ├─ Creates field definitions
+    ├─ Calls Azure Document Intelligence API
+    ├─ Polls for results (max 60 seconds)
+    ├─ Saves extracted data with confidence scores
+    └─ Updates document status: completed
+    ↓
+Frontend redirects to dashboard
+    ↓
+User clicks on document
+    ↓
+Edge Function: get-extracted-data-backend
+    ├─ Retrieves document
+    ├─ Retrieves extracted fields
+    └─ Returns formatted data
+    ↓
+Frontend displays document details
+    └─ User can edit/validate field values
+```
+
+## 📊 Database Triggers
+
+### handle_new_user()
+- **Trigger**: `on_auth_user_created`
+- **When**: New user signs up
+- **Action**: Auto-creates profile record with username, full_name, avatar_url
+
+### update_document_processed_at()
+- **Trigger**: `document_processed_at_trigger`
+- **When**: Document status changes to "completed"
+- **Action**: Auto-sets processed_at timestamp
+
+## 🌐 API Endpoints
+
+### Edge Functions
+- `POST /functions/v1/upload-document-backend` - Generate upload URL
+- `POST /functions/v1/process-document-backend` - Process document
+- `POST /functions/v1/get-extracted-data-backend` - Get extracted data
+
+## 📝 Environment Setup
+
+### Local Development
+```bash
+# .env.local
+NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+### Production
+```bash
+# .env.production
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+```
 
 ## 🚀 Deployment
 
 ### Frontend (Vercel/Netlify)
 ```bash
 npm run build
+# Deploy the .next folder to Vercel/Netlify
 ```
-
-Deploy to Vercel or Netlify following their deployment guides.
 
 ### Edge Functions (Supabase)
 ```bash
 npm run functions:deploy
 ```
 
+### Database
+```bash
+# Migrations are auto-applied via Supabase
+supabase db push
+```
+
 ## 🐛 Troubleshooting
 
-See [QUICKSTART.md](./QUICKSTART.md#troubleshooting) for common issues and solutions.
+### Database Connection Issues
+- Verify Supabase project is running
+- Check `NEXT_PUBLIC_SUPABASE_URL` and anon key
+- Run `npm run supabase:link` to link project
 
-## 📖 Learn More
+### Edge Function Errors
+- Check logs: `npm run functions:logs`
+- Verify secrets are set: `supabase secrets list`
+- Test locally: `npm run functions:serve`
 
-### Next.js
+### Document Upload Issues
+- Check file size (max 50MB)
+- Verify storage bucket exists
+- Check RLS policies on storage
+
+### Azure Intelligence Errors
+- Verify endpoint URL format
+- Check API key is valid
+- Confirm model ID is correct (prebuilt-invoice)
+
+## 📚 Resources
+
 - [Next.js Documentation](https://nextjs.org/docs)
-- [Learn Next.js](https://nextjs.org/learn)
-
-### Supabase
 - [Supabase Documentation](https://supabase.com/docs)
-- [Edge Functions Guide](https://supabase.com/docs/guides/functions)
-
-### Azure
 - [Azure Document Intelligence](https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/)
+- [Tailwind CSS](https://tailwindcss.com)
+- [TypeScript](https://www.typescriptlang.org)
 
 ## 📄 License
 
-This project is private and proprietary.
+Private and Proprietary
 
-## 🤝 Contributing
+## 👥 Support
 
-This is a private project. Please contact the project maintainers for contribution guidelines.
+For issues, questions, or contributions, contact the development team.
+
 
