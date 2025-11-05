@@ -1,0 +1,38 @@
+# Git files
+.git
+.gitignore
+.github
+
+# Node modules and package files
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Environment files (use Vercel environment variables instead)
+.env.local
+.env.*.local
+
+# Development files
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Documentation
+README.md
+DEPLOYMENT.md
+docs/
+
+# SQL files
+*.sql
+scripts/
+
+# Build artifacts (Vercel builds these)
+.next
+.turbo
+dist
+build
+
+# Testing
+.test
+.coverage

@@ -7,18 +7,19 @@ const AUTH_PATHS = ["/auth/login", "/auth/sign-up"]
 const isPathMatch = (pathname: string, paths: string[]) => paths.some((path) => pathname.startsWith(path))
 
 export async function middleware(request: NextRequest) {
-  // Check if environment variables are available
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-  // If env vars are missing, skip middleware and allow request
-  if (!supabaseUrl || !supabaseKey) {
-    return NextResponse.next({ request })
-  }
-
-  let supabaseResponse = NextResponse.next({ request })
-
   try {
+    // Check if environment variables are available
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    // If env vars are missing, skip auth and allow request to proceed
+    if (!supabaseUrl || !supabaseKey) {
+      console.warn("Supabase environment variables not configured. Skipping auth middleware.")
+      return NextResponse.next({ request })
+    }
+
+    let supabaseResponse = NextResponse.next({ request })
+
     const supabase = createServerClient(supabaseUrl, supabaseKey, {
       cookies: {
         getAll() {
@@ -34,6 +35,7 @@ export async function middleware(request: NextRequest) {
       },
     })
 
+    // Get user safely
     const {
       data: { user },
     } = await supabase.auth.getUser()
@@ -59,7 +61,7 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse
   } catch (error) {
     console.error("Middleware error:", error)
-    // If there's an error, allow the request to proceed
+    // On any error, allow request to proceed to prevent blocking the site
     return NextResponse.next({ request })
   }
 }
