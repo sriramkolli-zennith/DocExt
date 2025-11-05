@@ -6,6 +6,7 @@ import { FileText, LayoutDashboard, User, FileStack } from "lucide-react"
 import { createClient } from "@/lib/client"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 export default function Navbar() {
   const [user, setUser] = useState<any>(null)
@@ -59,6 +60,7 @@ export default function Navbar() {
                 <User className="h-4 w-4" />
                 <span className="text-sm">Profile</span>
               </Link>
+              <ThemeToggle />
             </>
           ) : (
             <>
@@ -72,6 +74,7 @@ export default function Navbar() {
                   Sign Up
                 </Button>
               </Link>
+              <ThemeToggle />
             </>
           )}
         </div>

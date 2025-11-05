@@ -7,6 +7,7 @@ import { HomeHero, HomeFeatures, HomeCallToAction, HomeFooter } from "@/componen
 import { createClient } from "@/lib/client"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 export default function Home() {
   const [user, setUser] = useState<any>(null)
@@ -33,7 +34,7 @@ export default function Home() {
           <FileText className="h-8 w-8 text-primary" />
           <span className="text-xl font-bold">DocExtract</span>
         </div>
-        <div className="flex gap-3">
+        <div className="flex items-center gap-3">
           {!loading && (
             user ? (
               <>
@@ -55,6 +56,7 @@ export default function Home() {
               </>
             )
           )}
+          <ThemeToggle />
         </div>
       </nav>
 
