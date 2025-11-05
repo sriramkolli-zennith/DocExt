@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/client"
-import { getExtractedData } from "@/lib/edge-functions"
+import { getExtractedData, processDocument } from "@/lib/edge-functions"
 import { Button } from "@/components/ui/button"
 
 export const dynamic = "force-dynamic"
@@ -39,7 +39,9 @@ export default function DocumentDetailPage() {
   const [document, setDocument] = useState<Document | null>(null)
   const [fields, setFields] = useState<ExtractedField[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isProcessing, setIsProcessing] = useState(false)
   const [newFieldName, setNewFieldName] = useState("")
+  const [newFieldType, setNewFieldType] = useState("text")
   const [selectedField, setSelectedField] = useState<ExtractedField | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const router = useRouter()
@@ -77,15 +79,18 @@ export default function DocumentDetailPage() {
 
   const handleAddField = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newFieldName.trim()) return
+    if (!newFieldName.trim() || !document) return
+
+    setIsProcessing(true)
 
     try {
+      // First, create the field in the database
       const { data: fieldData, error: fieldError } = await supabase
         .from("document_fields")
         .insert({
           document_id: documentId,
           name: newFieldName,
-          type: "text",
+          type: newFieldType,
           description: `User-added field: ${newFieldName}`,
         })
         .select()
@@ -93,20 +98,74 @@ export default function DocumentDetailPage() {
 
       if (fieldError) throw fieldError
 
+      // Add field to UI with empty value and processing status
       const newField: ExtractedField = {
         id: fieldData.id,
         fieldId: fieldData.id,
         fieldName: fieldData.name,
         fieldType: fieldData.type,
         fieldDescription: fieldData.description,
-        value: "",
+        value: "Processing...",
         confidence: null,
       }
 
       setFields([...fields, newField])
       setNewFieldName("")
+      setNewFieldType("text")
+
+      // Update document status to processing
+      await supabase
+        .from("documents")
+        .update({ status: "processing" })
+        .eq("id", documentId)
+
+      // Get the public URL for the document
+      const { data: publicUrlData } = supabase
+        .storage
+        .from('documents')
+        .getPublicUrl(document.storagePath)
+
+      const publicUrl = publicUrlData.publicUrl
+
+      // Trigger Azure extraction for the new field
+      console.log("Triggering extraction for new field:", newFieldName)
+      console.log("Document path:", document.storagePath)
+      console.log("Public URL:", publicUrl)
+
+      const { data: processData, error: processError } = await processDocument({
+        documentId: documentId,
+        documentName: document.name,
+        filePath: document.storagePath,
+        publicUrl: publicUrl,
+        fieldsToExtract: [{ 
+          name: newFieldName, 
+          type: newFieldType, 
+          description: `User-added field: ${newFieldName}` 
+        }],
+      })
+
+      if (processError) {
+        console.error("Extraction error:", processError)
+        // Update the field to show extraction failed
+        setFields(prevFields => 
+          prevFields.map(f => 
+            f.fieldId === fieldData.id 
+              ? { ...f, value: "Extraction failed" }
+              : f
+          )
+        )
+      } else {
+        console.log("Extraction successful:", processData)
+      }
+
+      // Refresh data after a delay to get the extracted value
+      setTimeout(() => {
+        fetchData()
+        setIsProcessing(false)
+      }, 3000)
     } catch (error) {
       console.error("Failed to add field:", error)
+      setIsProcessing(false)
     }
   }
 
@@ -121,6 +180,70 @@ export default function DocumentDetailPage() {
       setFields(fields.filter((f) => f.fieldId !== fieldId))
     } catch (error) {
       console.error("Failed to delete field:", error)
+    }
+  }
+
+  const handleRerun = async () => {
+    if (!document || fields.length === 0) return
+
+    setIsProcessing(true)
+
+    try {
+      // Update document status to processing
+      await supabase
+        .from("documents")
+        .update({ status: "processing" })
+        .eq("id", documentId)
+
+      // Update all fields to show processing
+      setFields(prevFields => 
+        prevFields.map(f => ({ ...f, value: "Processing..." }))
+      )
+
+      // Prepare all fields for extraction
+      const fieldsToExtract = fields.map(field => ({
+        name: field.fieldName,
+        type: field.fieldType,
+        description: field.fieldDescription,
+      }))
+
+      // Get the public URL for the document
+      const { data: publicUrlData } = supabase
+        .storage
+        .from('documents')
+        .getPublicUrl(document.storagePath)
+
+      const publicUrl = publicUrlData.publicUrl
+
+      console.log("Rerunning extraction for all fields:", fieldsToExtract)
+      console.log("Document path:", document.storagePath)
+      console.log("Public URL:", publicUrl)
+
+      // Trigger Azure extraction for all fields
+      const { data: processData, error: processError } = await processDocument({
+        documentId: documentId,
+        documentName: document.name,
+        filePath: document.storagePath,
+        publicUrl: publicUrl,
+        fieldsToExtract: fieldsToExtract,
+      })
+
+      if (processError) {
+        console.error("Rerun extraction error:", processError)
+        alert("Failed to rerun extraction. Please try again.")
+      } else {
+        console.log("Rerun extraction successful:", processData)
+      }
+
+      // Refresh data after a delay to get the extracted values
+      setTimeout(() => {
+        fetchData()
+        setIsProcessing(false)
+      }, 5000)
+    } catch (error) {
+      console.error("Failed to rerun extraction:", error)
+      setIsProcessing(false)
+      alert("Failed to rerun extraction. Please try again.")
     }
   }
 
@@ -220,17 +343,29 @@ export default function DocumentDetailPage() {
           <div>
             <h1 className="text-3xl font-bold mb-2">{document.name}</h1>
             <p className="text-muted-foreground">
-              Status: <span className="capitalize font-medium">{document.status}</span> • {fields.length} field{fields.length !== 1 ? "s" : ""}
+              Status: <span className={`capitalize font-medium ${isProcessing || document.status === 'processing' ? 'text-yellow-600' : ''}`}>
+                {isProcessing ? 'processing' : document.status}
+              </span> • {fields.length} field{fields.length !== 1 ? "s" : ""}
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={handleExportData} disabled={fields.length === 0} className="gap-2 bg-transparent">
+            <Button 
+              variant="outline" 
+              onClick={handleExportData} 
+              disabled={fields.length === 0 || isProcessing} 
+              className="gap-2 bg-transparent"
+            >
               <Download className="h-4 w-4" />
               Export
             </Button>
-            <Button variant="outline" className="gap-2 bg-transparent">
-              <RotateCcw className="h-4 w-4" />
-              Re-run
+            <Button 
+              variant="outline" 
+              onClick={handleRerun} 
+              disabled={fields.length === 0 || isProcessing} 
+              className="gap-2 bg-transparent"
+            >
+              <RotateCcw className={`h-4 w-4 ${isProcessing ? 'animate-spin' : ''}`} />
+              {isProcessing ? 'Processing...' : 'Re-run'}
             </Button>
           </div>
         </div>
@@ -244,15 +379,32 @@ export default function DocumentDetailPage() {
                 <CardTitle className="text-lg">Add Field</CardTitle>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleAddField} className="flex gap-2">
-                  <Input
-                    placeholder="Field name"
-                    value={newFieldName}
-                    onChange={(e) => setNewFieldName(e.target.value)}
-                  />
-                  <Button type="submit" className="gap-2">
+                <form onSubmit={handleAddField} className="flex flex-col gap-3">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Field name"
+                      value={newFieldName}
+                      onChange={(e) => setNewFieldName(e.target.value)}
+                      className="flex-1"
+                    />
+                    <select
+                      value={newFieldType}
+                      onChange={(e) => setNewFieldType(e.target.value)}
+                      className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                      <option value="text">Text</option>
+                      <option value="number">Number</option>
+                      <option value="date">Date</option>
+                      <option value="email">Email</option>
+                      <option value="phone">Phone</option>
+                      <option value="currency">Currency</option>
+                      <option value="address">Address</option>
+                      <option value="url">URL</option>
+                    </select>
+                  </div>
+                  <Button type="submit" className="gap-2 w-full" disabled={isProcessing}>
                     <Plus className="h-4 w-4" />
-                    Add
+                    {isProcessing ? 'Adding & Extracting...' : 'Add Field'}
                   </Button>
                 </form>
               </CardContent>
@@ -272,7 +424,12 @@ export default function DocumentDetailPage() {
                     <CardContent className="py-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
-                          <p className="text-sm font-semibold text-muted-foreground mb-2">{field.fieldName}</p>
+                          <div className="flex items-center gap-2 mb-2">
+                            <p className="text-sm font-semibold text-muted-foreground">{field.fieldName}</p>
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                              {field.fieldType}
+                            </span>
+                          </div>
                           <p className="text-base font-medium">{field.value || "Not extracted"}</p>
                           {field.confidence && (
                             <p className="text-xs text-muted-foreground mt-2">

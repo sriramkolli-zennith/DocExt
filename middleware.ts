@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr"
 import { type NextRequest, NextResponse } from "next/server"
 
-const PROTECTED_PATHS = ["/dashboard", "/extract", "/documents", "/account", "/templates"]
+const PROTECTED_PATHS = ["/dashboard", "/extract", "/documents", "/account"]
 const AUTH_PATHS = ["/auth/login", "/auth/sign-up"]
 
 const isPathMatch = (pathname: string, paths: string[]) => paths.some((path) => pathname.startsWith(path))

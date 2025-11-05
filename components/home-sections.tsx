@@ -2,16 +2,16 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Zap, Shield, FileText, ArrowRight } from "lucide-react"
 
-export function HomeHero() {
+export function HomeHero({ user }: { user: any }) {
   return (
     <section className="flex flex-col items-center justify-center px-6 py-20 text-center md:py-32">
       <h1 className="mb-6 text-4xl font-bold md:text-5xl lg:text-6xl text-balance">Extract Document Data with AI</h1>
       <p className="mb-8 text-lg text-muted-foreground max-w-2xl text-balance">
         Powered by Azure Document Intelligence, extract structured data from your documents instantly and accurately.
       </p>
-      <Link href="/auth/sign-up">
+      <Link href={user ? "/dashboard" : "/auth/sign-up"}>
         <Button size="lg" className="gap-2">
-          Get Started <ArrowRight className="h-5 w-5" />
+          {user ? "Go to Dashboard" : "Get Started"} <ArrowRight className="h-5 w-5" />
         </Button>
       </Link>
     </section>
