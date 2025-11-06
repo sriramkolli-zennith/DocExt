@@ -72,7 +72,6 @@ export default function ProfilePage() {
         .update({
           full_name: fullName,
           username: username,
-          updated_at: new Date().toISOString(),
         })
         .eq("id", user.id)
 

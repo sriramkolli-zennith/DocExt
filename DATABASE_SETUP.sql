@@ -278,36 +278,6 @@ CREATE POLICY "users_update_own" ON storage.objects
   );
 
 -- ================================================================
--- SECTION 6: TEMPLATES TABLE (Field configurations)
--- ================================================================
-
-CREATE TABLE IF NOT EXISTS public.templates (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users ON DELETE CASCADE,
-  name text NOT NULL,
-  description text,
-  fields jsonb NOT NULL DEFAULT '[]',
-  is_public boolean DEFAULT false,
-  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
-  updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
-  CONSTRAINT name_not_empty CHECK (char_length(name) > 0)
-);
-
-ALTER TABLE public.templates ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "templates_select_own_or_public" ON public.templates 
-  FOR SELECT USING (auth.uid() = user_id OR is_public = true);
-
-CREATE POLICY "templates_insert_own" ON public.templates 
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "templates_update_own" ON public.templates 
-  FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "templates_delete_own" ON public.templates 
-  FOR DELETE USING (auth.uid() = user_id);
-
--- ================================================================
 -- SECTION 7: STORAGE BUCKET (Documents)
 -- ================================================================
 
