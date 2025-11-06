@@ -12,7 +12,6 @@ import { Label } from "@/components/ui/label"
 import { Upload, Plus, X, Loader2, FileText, Sparkles, ChevronDown, ChevronUp } from "lucide-react"
 import { extractionNameSchema, fieldExtractionSchema } from "@/lib/validations"
 
-export const dynamic = "force-dynamic"
 import { useRouter } from "next/navigation"
 import Navbar from "@/components/navbar"
 

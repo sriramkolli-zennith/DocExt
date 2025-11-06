@@ -12,8 +12,6 @@ import Link from "next/link"
 import { Eye, EyeOff } from "lucide-react"
 import { loginSchema } from "@/lib/validations"
 
-export const dynamic = "force-dynamic"
-
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")

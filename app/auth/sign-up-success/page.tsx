@@ -3,8 +3,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { FileText, Mail } from "lucide-react"
 
-export const dynamic = "force-dynamic"
-
 export default function SignUpSuccessPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 py-10 bg-gradient-to-b from-background to-muted">
