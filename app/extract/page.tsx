@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useState, useRef } from "react"
 import { uploadDocument, processDocument } from "@/lib/edge-functions"
+import { useSessionManager } from "@/lib/useSessionManager"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -64,6 +65,9 @@ export default function ExtractPage() {
   const [isDragActive, setIsDragActive] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
+  
+  // Initialize session manager for activity tracking and timeout
+  useSessionManager()
 
   const handleNameSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -210,7 +214,7 @@ export default function ExtractPage() {
     <div className="min-h-screen bg-linear-to-b from-background to-muted">
       <Navbar />
 
-      <div className="max-w-2xl mx-auto px-6 py-10">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         {step === "name" && (
           <Card>
             <CardHeader>
@@ -386,8 +390,8 @@ export default function ExtractPage() {
 
                 {/* Add Custom Field */}
                 <div className="space-y-3">
-                  <p className="font-semibold">Add Custom Field:</p>
-                  <div className="flex gap-2">
+                  <p className="font-semibold text-sm sm:text-base">Add Custom Field:</p>
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Input
                       placeholder="e.g., InvoiceTotal, CustomerName"
                       value={newField}
@@ -398,12 +402,12 @@ export default function ExtractPage() {
                           addField()
                         }
                       }}
-                      className="flex-1"
+                      className="flex-1 text-sm"
                     />
                     <select
                       value={newFieldType}
                       onChange={(e) => setNewFieldType(e.target.value)}
-                      className="px-3 py-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="px-3 py-2 rounded-md border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:focus:ring-slate-600"
                     >
                       {FIELD_TYPES.map(type => (
                         <option key={type.value} value={type.value}>
@@ -411,7 +415,7 @@ export default function ExtractPage() {
                         </option>
                       ))}
                     </select>
-                    <Button type="button" variant="outline" onClick={() => addField()} className="gap-2 bg-transparent">
+                    <Button type="button" variant="outline" onClick={() => addField()} className="gap-2 w-full sm:w-auto">
                       <Plus className="h-4 w-4" />
                       Add
                     </Button>

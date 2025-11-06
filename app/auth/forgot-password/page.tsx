@@ -41,13 +41,15 @@ export default function ForgotPasswordPage() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
-              <Mail className="h-6 w-6 text-green-600" />
+                      <div className="mb-6 text-center">
+            <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+              <Mail className="h-6 w-6 text-green-600 dark:text-green-400" />
             </div>
             <CardTitle>Check Your Email</CardTitle>
             <CardDescription>
               We've sent a password reset link to {email}
             </CardDescription>
+          </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground text-center">

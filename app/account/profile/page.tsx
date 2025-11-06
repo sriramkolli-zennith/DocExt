@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/client"
+import { useSessionManager } from "@/lib/useSessionManager"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -24,6 +25,9 @@ export default function ProfilePage() {
   const [success, setSuccess] = useState(false)
   const router = useRouter()
   const supabase = createClient()
+  
+  // Initialize session manager for activity tracking and timeout
+  useSessionManager()
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -108,7 +112,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-linear-to-b from-background to-muted">
       <Navbar />
-      <div className="max-w-2xl mx-auto px-6 py-10">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         <Link href="/dashboard" className="flex items-center gap-2 text-primary hover:underline mb-6">
           <ArrowLeft className="h-4 w-4" />
           Back to Dashboard
@@ -158,7 +162,7 @@ export default function ProfilePage() {
               </div>
 
               {error && <p className="text-sm text-destructive">{error}</p>}
-              {success && <p className="text-sm text-green-600">Profile updated successfully!</p>}
+              {success && <p className="text-sm text-green-600 dark:text-green-400">Profile updated successfully!</p>}
 
               <Button type="submit" disabled={isSaving}>
                 {isSaving ? "Saving..." : "Save Changes"}
@@ -177,7 +181,7 @@ export default function ProfilePage() {
                       <p className="text-sm text-muted-foreground">Primary login method</p>
                     </div>
                   </div>
-                  <span className="text-sm font-medium text-green-600">✓ Connected</span>
+                  <span className="text-sm font-medium text-green-600 dark:text-green-400">✓ Connected</span>
                 </div>
 
                 <div className="flex items-center justify-between p-4 border rounded-lg">
@@ -188,14 +192,14 @@ export default function ProfilePage() {
                       <p className="text-sm text-muted-foreground">Alternative login method</p>
                     </div>
                   </div>
-                  <span className={`text-sm font-medium ${isGithubLinked ? "text-green-600" : "text-muted-foreground"}`}>
+                  <span className={`text-sm font-medium ${isGithubLinked ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
                     {isGithubLinked ? "✓ Connected" : "Not connected"}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-center gap-3">
-                    <svg className="h-5 w-5 text-red-500" viewBox="0 0 24 24">
+                    <svg className="h-5 w-5 text-red-500 dark:text-red-400" viewBox="0 0 24 24">
                       <path
                         fill="currentColor"
                         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -210,7 +214,7 @@ export default function ProfilePage() {
                       <p className="text-sm text-muted-foreground">Alternative login method</p>
                     </div>
                   </div>
-                  <span className={`text-sm font-medium ${isGoogleLinked ? "text-green-600" : "text-muted-foreground"}`}>
+                  <span className={`text-sm font-medium ${isGoogleLinked ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
                     {isGoogleLinked ? "✓ Connected" : "Not connected"}
                   </span>
                 </div>

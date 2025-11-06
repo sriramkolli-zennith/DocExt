@@ -63,7 +63,7 @@ export default function ResetPasswordPage() {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle className="h-6 w-6 text-green-600" />
+              <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
             </div>
             <CardTitle>Password Reset Successful</CardTitle>
             <CardDescription>

@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { createClient } from "@/lib/client"
+import { useSessionManager } from "@/lib/useSessionManager"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Plus, FileText, TrendingUp, CheckCircle2, Clock } from "lucide-react"
@@ -34,6 +35,9 @@ export default function DashboardContent({ initialDocuments, initialStats }: Das
   const [documents, setDocuments] = useState<Document[]>(initialDocuments)
   const [stats, setStats] = useState<Stats>(initialStats)
   const supabase = createClient()
+  
+  // Initialize session manager for activity tracking and timeout
+  useSessionManager()
 
   const handleDelete = async (documentId: string) => {
     if (!window.confirm("Are you sure you want to delete this document?")) return
@@ -61,15 +65,15 @@ export default function DashboardContent({ initialDocuments, initialStats }: Das
   const recentDocs = documents.slice(0, 3)
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-10">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-          <p className="text-muted-foreground">Overview of your document extraction activity</p>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2">Dashboard</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Overview of your document extraction activity</p>
         </div>
         <Link href="/extract">
-          <Button size="lg" className="gap-2">
+          <Button size="lg" className="gap-2 w-full sm:w-auto">
             <Plus className="h-5 w-5" />
             New Extraction
           </Button>
@@ -77,7 +81,7 @@ export default function DashboardContent({ initialDocuments, initialStats }: Das
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -150,10 +154,10 @@ export default function DashboardContent({ initialDocuments, initialStats }: Das
                         </p>
                       </div>
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        doc.status === "completed" ? "bg-green-100 text-green-700" :
-                        doc.status === "processing" ? "bg-blue-100 text-blue-700" :
-                        doc.status === "failed" ? "bg-red-100 text-red-700" :
-                        "bg-gray-100 text-gray-700"
+                        doc.status === "completed" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
+                        doc.status === "processing" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" :
+                        doc.status === "failed" ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" :
+                        "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
                       }`}>
                         {doc.status}
                       </span>

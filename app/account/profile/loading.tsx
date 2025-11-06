@@ -8,7 +8,7 @@ export default function ProfileLoading() {
   return (
     <div className="min-h-screen bg-linear-to-b from-background to-muted">
       <Navbar />
-      <div className="max-w-2xl mx-auto px-6 py-10">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         <Link href="/dashboard" className="flex items-center gap-2 text-primary hover:underline mb-6">
           <ArrowLeft className="h-4 w-4" />
           Back to Dashboard

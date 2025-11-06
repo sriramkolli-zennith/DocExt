@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/client"
+import { useSessionManager } from "@/lib/useSessionManager"
 import { getExtractedData, processDocument } from "@/lib/edge-functions"
 import { Button } from "@/components/ui/button"
 
@@ -46,6 +47,9 @@ export default function DocumentDetailPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const router = useRouter()
   const supabase = createClient()
+  
+  // Initialize session manager for activity tracking and timeout
+  useSessionManager()
 
   useEffect(() => {
     fetchData()
@@ -322,7 +326,7 @@ export default function DocumentDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-linear-to-b from-background to-muted">
         <Navbar />
         <div className="flex items-center justify-center h-96">
           <p className="text-muted-foreground">Loading document...</p>
@@ -333,7 +337,7 @@ export default function DocumentDetailPage() {
 
   if (!document) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-linear-to-b from-background to-muted">
         <Navbar />
         <div className="flex items-center justify-center h-96">
           <p className="text-muted-foreground">Document not found</p>
@@ -346,18 +350,18 @@ export default function DocumentDetailPage() {
     <div className="min-h-screen bg-linear-to-b from-background to-muted">
       <Navbar />
 
-      <div className="max-w-6xl mx-auto px-6 py-10">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         {/* Header */}
         <Link href="/documents" className="flex items-center gap-2 text-primary hover:underline mb-6">
           <ArrowLeft className="h-4 w-4" />
           Back to Documents
         </Link>
 
-        <div className="mb-8 flex items-start justify-between">
+        <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold mb-2">{document.name}</h1>
             <p className="text-muted-foreground">
-              Status: <span className={`capitalize font-medium ${isProcessing || document.status === 'processing' ? 'text-yellow-600' : ''}`}>
+              Status: <span className={`capitalize font-medium ${isProcessing || document.status === 'processing' ? 'text-yellow-500 dark:text-yellow-400' : ''}`}>
                 {isProcessing ? 'processing' : document.status}
               </span> • {fields.length} field{fields.length !== 1 ? "s" : ""}
             </p>
@@ -367,7 +371,7 @@ export default function DocumentDetailPage() {
               variant="outline" 
               onClick={handleExportData} 
               disabled={fields.length === 0 || isProcessing} 
-              className="gap-2 bg-transparent"
+              className="gap-2"
             >
               <Download className="h-4 w-4" />
               Export
@@ -376,7 +380,7 @@ export default function DocumentDetailPage() {
               variant="outline" 
               onClick={handleRerun} 
               disabled={fields.length === 0 || isProcessing} 
-              className="gap-2 bg-transparent"
+              className="gap-2"
             >
               <RotateCcw className={`h-4 w-4 ${isProcessing ? 'animate-spin' : ''}`} />
               {isProcessing ? 'Processing...' : 'Re-run'}
@@ -404,7 +408,7 @@ export default function DocumentDetailPage() {
                     <select
                       value={newFieldType}
                       onChange={(e) => setNewFieldType(e.target.value)}
-                      className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      className="h-9 rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:focus-visible:ring-slate-600"
                     >
                       <option value="text">Text</option>
                       <option value="number">Number</option>
@@ -440,7 +444,16 @@ export default function DocumentDetailPage() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
                             <p className="text-sm font-semibold text-muted-foreground">{field.fieldName}</p>
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                              field.fieldType === 'currency' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                              field.fieldType === 'date' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
+                              field.fieldType === 'number' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                              field.fieldType === 'email' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
+                              field.fieldType === 'phone' ? 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400' :
+                              field.fieldType === 'address' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' :
+                              field.fieldType === 'url' ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400' :
+                              'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
+                            }`}>
                               {field.fieldType}
                             </span>
                           </div>

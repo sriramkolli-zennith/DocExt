@@ -27,7 +27,7 @@ export default function SignUpSuccessPage() {
               Please check your email and click the confirmation link to activate your account.
             </p>
             <Link href="/auth/login">
-              <Button variant="outline" className="w-full bg-transparent">
+              <Button variant="outline" className="w-full">
                 Back to Login
               </Button>
             </Link>

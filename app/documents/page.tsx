@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/client"
+import { useSessionManager } from "@/lib/useSessionManager"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 
@@ -30,6 +31,9 @@ export default function DocumentsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const router = useRouter()
   const supabase = createClient()
+  
+  // Initialize session manager for activity tracking and timeout
+  useSessionManager()
 
   useEffect(() => {
     fetchDocuments()
@@ -110,15 +114,15 @@ export default function DocumentsPage() {
     <div className="min-h-screen bg-linear-to-b from-background to-muted">
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-6 py-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Documents</h1>
-            <p className="text-muted-foreground">Browse and manage all your documents</p>
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2">Documents</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">Browse and manage all your documents</p>
           </div>
           <Link href="/extract">
-            <Button size="lg" className="gap-2">
+            <Button size="lg" className="gap-2 w-full sm:w-auto">
               <Plus className="h-5 w-5" />
               New Extraction
             </Button>
@@ -126,24 +130,24 @@ export default function DocumentsPage() {
         </div>
 
         {/* Filters */}
-        <div className="mb-8 space-y-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="mb-8 space-y-3 sm:space-y-4">
+          <div className="flex flex-col lg:flex-row gap-3 sm:gap-4">
+            <div className="flex-1 relative min-w-0">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground shrink-0" />
               <Input
                 placeholder="Search documents..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 w-full text-sm"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 overflow-x-auto pb-2 lg:pb-0">
               {["all", "completed", "processing", "failed", "pending"].map((status) => (
                 <Button
                   key={status}
                   variant={statusFilter === status ? "default" : "outline"}
                   onClick={() => setStatusFilter(status)}
-                  className={statusFilter === status ? "" : "bg-transparent"}
+                  className={`whitespace-nowrap text-xs sm:text-sm`}
                 >
                   {status.charAt(0).toUpperCase() + status.slice(1)}
                 </Button>
