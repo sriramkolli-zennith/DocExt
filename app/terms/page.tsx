@@ -2,6 +2,8 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 
+export const dynamic = "force-static"
+
 export default function TermsOfServicePage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted">

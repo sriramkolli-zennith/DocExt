@@ -127,82 +127,43 @@ export default function DashboardContent({ initialDocuments, initialStats }: Das
         </Card>
       </div>
 
-      {/* Recent Uploads & Quick Links */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Recent Uploads */}
-        <div className="lg:col-span-2">
-          <h2 className="text-xl font-semibold mb-4">Recent Uploads</h2>
-          {recentDocs.length === 0 ? (
-            <Card>
-              <CardContent className="py-8 text-center text-muted-foreground">
-                No documents yet. Start your first extraction!
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-3">
-              {recentDocs.map((doc) => (
-                <Link key={doc.id} href={`/documents/${doc.id}`}>
-                  <Card className="hover:shadow-md transition cursor-pointer">
-                    <CardContent className="py-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <p className="font-medium line-clamp-1">{doc.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(doc.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          doc.status === "completed" ? "bg-green-100 text-green-700" :
-                          doc.status === "processing" ? "bg-blue-100 text-blue-700" :
-                          doc.status === "failed" ? "bg-red-100 text-red-700" :
-                          "bg-gray-100 text-gray-700"
-                        }`}>
-                          {doc.status}
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Quick Links */}
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Quick Links</h2>
+      {/* Recent Uploads */}
+      <div>
+        <h2 className="text-xl font-semibold mb-4">Recent Uploads</h2>
+        {recentDocs.length === 0 ? (
+          <Card>
+            <CardContent className="py-8 text-center text-muted-foreground">
+              No documents yet. Start your first extraction!
+            </CardContent>
+          </Card>
+        ) : (
           <div className="space-y-3">
-            <Link href="/extract" className="block">
-              <Card className="hover:shadow-md transition cursor-pointer">
-                <CardContent className="py-4">
-                  <p className="font-medium flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
-                    New Extraction
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
-
-            <Link href="/documents" className="block">
-              <Card className="hover:shadow-md transition cursor-pointer">
-                <CardContent className="py-4">
-                  <p className="font-medium flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    All Documents
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
-
-            <Link href="/account/profile" className="block">
-              <Card className="hover:shadow-md transition cursor-pointer">
-                <CardContent className="py-4">
-                  <p className="font-medium">Profile Settings</p>
-                </CardContent>
-              </Card>
-            </Link>
+            {recentDocs.map((doc) => (
+              <Link key={doc.id} href={`/documents/${doc.id}`}>
+                <Card className="hover:shadow-md transition cursor-pointer">
+                  <CardContent className="py-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="font-medium line-clamp-1">{doc.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(doc.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        doc.status === "completed" ? "bg-green-100 text-green-700" :
+                        doc.status === "processing" ? "bg-blue-100 text-blue-700" :
+                        doc.status === "failed" ? "bg-red-100 text-red-700" :
+                        "bg-gray-100 text-gray-700"
+                      }`}>
+                        {doc.status}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
           </div>
-        </div>
+        )}
       </div>
 
       {/* All Documents */}

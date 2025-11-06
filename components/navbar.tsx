@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { FileText, LayoutDashboard, User, FileStack } from "lucide-react"
 import { createClient } from "@/lib/client"
 import { useEffect, useState } from "react"
@@ -12,6 +12,7 @@ export default function Navbar() {
   const [user, setUser] = useState<any>(null)
   const supabase = createClient()
   const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
     const getUser = async () => {
@@ -28,6 +29,18 @@ export default function Navbar() {
     router.push("/")
   }
 
+  const isActive = (href: string) => {
+    return pathname === href || pathname.startsWith(href + "/")
+  }
+
+  const navLinkClass = (href: string) => {
+    return `flex items-center gap-2 text-sm transition ${
+      isActive(href)
+        ? "text-primary font-semibold"
+        : "text-muted-foreground hover:text-foreground"
+    }`
+  }
+
   return (
     <nav className="border-b bg-card">
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -39,26 +52,17 @@ export default function Navbar() {
         <div className="flex items-center gap-4">
           {user ? (
             <>
-              <Link
-                href="/dashboard"
-                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition"
-              >
+              <Link href="/dashboard" className={navLinkClass("/dashboard")}>
                 <LayoutDashboard className="h-4 w-4" />
-                <span className="text-sm">Dashboard</span>
+                <span>Dashboard</span>
               </Link>
-              <Link
-                href="/documents"
-                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition"
-              >
+              <Link href="/documents" className={navLinkClass("/documents")}>
                 <FileStack className="h-4 w-4" />
-                <span className="text-sm">Documents</span>
+                <span>Documents</span>
               </Link>
-              <Link
-                href="/account/profile"
-                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition"
-              >
+              <Link href="/account/profile" className={navLinkClass("/account/profile")}>
                 <User className="h-4 w-4" />
-                <span className="text-sm">Profile</span>
+                <span>Profile</span>
               </Link>
               <ThemeToggle />
             </>
