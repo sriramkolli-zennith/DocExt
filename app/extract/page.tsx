@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Upload, Plus, X, Loader2, FileText, Sparkles, ChevronDown, ChevronUp } from "lucide-react"
+import { extractionNameSchema, fieldExtractionSchema } from "@/lib/validations"
 
 export const dynamic = "force-dynamic"
 import { useRouter } from "next/navigation"
@@ -66,10 +67,15 @@ export default function ExtractPage() {
 
   const handleNameSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!documentName.trim()) {
-      setError("Please enter a document name")
+    
+    // Validate with Zod
+    const validation = extractionNameSchema.safeParse({ documentName })
+    if (!validation.success) {
+      const firstError = validation.error.errors[0]
+      setError(firstError.message)
       return
     }
+    
     setError(null)
     setStep("upload")
   }
@@ -127,8 +133,11 @@ export default function ExtractPage() {
     const name = fieldName || newField
     const type = fieldType || newFieldType
     
-    if (!name.trim()) {
-      setError("Please enter a field name")
+    // Validate with Zod
+    const validation = fieldExtractionSchema.safeParse({ name, type })
+    if (!validation.success) {
+      const firstError = validation.error.errors[0]
+      setError(firstError.message)
       return
     }
     
@@ -190,7 +199,7 @@ export default function ExtractPage() {
         }
       }
 
-      router.push("/dashboard")
+      router.push("/documents")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to extract documents")
       setIsLoading(false)

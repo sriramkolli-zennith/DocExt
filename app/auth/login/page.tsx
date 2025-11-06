@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import AuthForm from "@/components/auth-form"
 import Link from "next/link"
 import { Eye, EyeOff } from "lucide-react"
+import { loginSchema } from "@/lib/validations"
 
 export const dynamic = "force-dynamic"
 
@@ -23,8 +24,17 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
     setError(null)
+
+    // Validate with Zod
+    const validation = loginSchema.safeParse({ email, password })
+    if (!validation.success) {
+      const firstError = validation.error.errors[0]
+      setError(firstError.message)
+      return
+    }
+
+    setIsLoading(true)
 
     try {
       const { error } = await createClient().auth.signInWithPassword({ email, password })

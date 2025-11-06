@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import AuthForm from "@/components/auth-form"
 import Link from "next/link"
 import { Eye, EyeOff } from "lucide-react"
+import { signupSchema } from "@/lib/validations"
 
 export default function SignUpPage() {
   const [email, setEmail] = useState("")
@@ -25,14 +26,17 @@ export default function SignUpPage() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
     setError(null)
 
-    if (password !== confirmPassword) {
-      setError("Passwords do not match")
-      setIsLoading(false)
+    // Validate with Zod
+    const validation = signupSchema.safeParse({ email, password, confirmPassword })
+    if (!validation.success) {
+      const firstError = validation.error.errors[0]
+      setError(firstError.message)
       return
     }
+
+    setIsLoading(true)
 
     try {
       const { data, error } = await createClient().auth.signUp({
@@ -111,6 +115,9 @@ export default function SignUpPage() {
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
+          <p className="text-xs text-muted-foreground">
+            At least 8 characters, 1 uppercase letter, and 1 number
+          </p>
         </div>
         <div className="space-y-2">
           <Label htmlFor="confirmPassword">Confirm Password</Label>

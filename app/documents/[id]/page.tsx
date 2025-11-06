@@ -173,13 +173,27 @@ export default function DocumentDetailPage() {
     if (!window.confirm("Delete this field?")) return
 
     try {
-      await supabase.from("extracted_data").delete().eq("field_id", fieldId)
-      const { error } = await supabase.from("document_fields").delete().eq("id", fieldId)
+      // Delete extracted data first
+      const { error: dataError } = await supabase
+        .from("extracted_data")
+        .delete()
+        .eq("field_id", fieldId)
 
-      if (error) throw error
-      setFields(fields.filter((f) => f.fieldId !== fieldId))
+      if (dataError) throw dataError
+
+      // Then delete the field
+      const { error: fieldError } = await supabase
+        .from("document_fields")
+        .delete()
+        .eq("id", fieldId)
+
+      if (fieldError) throw fieldError
+
+      // Update UI - filter by id or fieldId
+      setFields(fields.filter((f) => f.id !== fieldId && f.fieldId !== fieldId))
     } catch (error) {
       console.error("Failed to delete field:", error)
+      alert("Failed to delete field. Please try again.")
     }
   }
 
@@ -453,7 +467,7 @@ export default function DocumentDetailPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDeleteField(field.id)}
+                            onClick={() => handleDeleteField(field.fieldId)}
                             className="text-destructive hover:bg-destructive/10"
                           >
                             <Trash2 className="h-4 w-4" />
