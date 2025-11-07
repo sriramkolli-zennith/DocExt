@@ -5,6 +5,7 @@ import type React from "react"
 import { useState, useRef } from "react"
 import { uploadDocument, processDocument } from "@/lib/edge-functions"
 import { useSessionManager } from "@/lib/useSessionManager"
+import { SessionWarningModal } from "@/components/session-warning-modal"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -66,7 +67,7 @@ export default function ExtractPage() {
   const router = useRouter()
   
   // Initialize session manager for activity tracking and timeout
-  useSessionManager()
+  const { showWarning, extendSession } = useSessionManager()
 
   const handleNameSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -212,6 +213,7 @@ export default function ExtractPage() {
   return (
     <div className="min-h-screen bg-linear-to-b from-background to-muted">
       <Navbar />
+      <SessionWarningModal open={showWarning} onExtend={extendSession} />
 
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         {step === "name" && (

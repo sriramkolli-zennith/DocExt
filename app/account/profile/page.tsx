@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/client"
 import { useSessionManager } from "@/lib/useSessionManager"
+import { SessionWarningModal } from "@/components/session-warning-modal"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -27,7 +28,7 @@ export default function ProfilePage() {
   const supabase = createClient()
   
   // Initialize session manager for activity tracking and timeout
-  useSessionManager()
+  const { showWarning, extendSession } = useSessionManager()
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -112,6 +113,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-linear-to-b from-background to-muted">
       <Navbar />
+      <SessionWarningModal open={showWarning} onExtend={extendSession} />
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         <Link href="/dashboard" className="flex items-center gap-2 text-primary hover:underline mb-6">
           <ArrowLeft className="h-4 w-4" />

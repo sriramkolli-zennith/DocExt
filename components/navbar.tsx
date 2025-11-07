@@ -7,6 +7,7 @@ import { createClient } from "@/lib/client"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
+import NavbarSkeleton from "@/components/navbar-skeleton"
 
 export default function Navbar() {
   const [user, setUser] = useState<any>(null)
@@ -14,6 +15,7 @@ export default function Navbar() {
   const supabase = createClient()
   const router = useRouter()
   const pathname = usePathname()
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const getUser = async () => {
@@ -21,6 +23,7 @@ export default function Navbar() {
         data: { user },
       } = await supabase.auth.getUser()
       setUser(user)
+      setLoading(false)
     }
     getUser()
   }, [])
@@ -40,6 +43,10 @@ export default function Navbar() {
         ? "text-primary font-semibold"
         : "text-muted-foreground hover:text-foreground"
     }`
+  }
+
+  if (loading) {
+    return <NavbarSkeleton />
   }
 
   return (
@@ -75,9 +82,7 @@ export default function Navbar() {
                 </Button>
               </Link>
               <Link href="/auth/sign-up">
-                <Button size="sm">
-                  Sign Up
-                </Button>
+                <Button size="sm">Sign Up</Button>
               </Link>
             </>
           )}

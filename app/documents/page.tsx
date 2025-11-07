@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/client"
 import { useSessionManager } from "@/lib/useSessionManager"
+import { SessionWarningModal } from "@/components/session-warning-modal"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 
@@ -33,7 +34,7 @@ export default function DocumentsPage() {
   const supabase = createClient()
   
   // Initialize session manager for activity tracking and timeout
-  useSessionManager()
+  const { showWarning, extendSession } = useSessionManager()
 
   useEffect(() => {
     fetchDocuments()
@@ -113,6 +114,7 @@ export default function DocumentsPage() {
   return (
     <div className="min-h-screen bg-linear-to-b from-background to-muted">
       <Navbar />
+      <SessionWarningModal open={showWarning} onExtend={extendSession} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         {/* Header */}

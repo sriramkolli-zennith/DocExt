@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/client"
 import { useSessionManager } from "@/lib/useSessionManager"
+import { SessionWarningModal } from "@/components/session-warning-modal"
 import { getExtractedData, processDocument } from "@/lib/edge-functions"
 import { Button } from "@/components/ui/button"
 
@@ -49,7 +50,7 @@ export default function DocumentDetailPage() {
   const supabase = createClient()
   
   // Initialize session manager for activity tracking and timeout
-  useSessionManager()
+  const { showWarning, extendSession } = useSessionManager()
 
   useEffect(() => {
     fetchData()
@@ -349,6 +350,7 @@ export default function DocumentDetailPage() {
   return (
     <div className="min-h-screen bg-linear-to-b from-background to-muted">
       <Navbar />
+      <SessionWarningModal open={showWarning} onExtend={extendSession} />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         {/* Header */}
