@@ -1,115 +1,987 @@
-# DocExt - Document Extraction Platform
+# DocExt - AI-Powered Document Intelligence Platform
 
-A Next.js application powered by Supabase Edge Functions and Azure Document Intelligence for intelligent document processing and field extraction.
+A production-grade Next.js application leveraging Supabase Edge Functions and Azure Document Intelligence to automatically extract structured data from documents with high accuracy.
 
 ## 🎯 Overview
 
-DocExt is a full-stack document extraction platform that allows users to upload documents (PDFs, images) and automatically extract structured data using AI. Features include:
+DocExt is an enterprise-ready document extraction platform that transforms unstructured documents (PDFs, images) into structured, actionable data using advanced AI. The platform provides:
 
-- **Document Management**: Upload, process, and manage documents
-- **Intelligent Extraction**: Uses Azure Document Intelligence to extract fields
-- **Authentication**: Email and OAuth (Google/GitHub) support
-- **Real-time Dashboard**: View all processed documents and extracted data
-- **Secure Storage**: User-scoped document storage with RLS protection
-- **Field Validation**: Edit and manually correct extracted values
+- **🤖 Intelligent Extraction**: Azure Document Intelligence AI automatically identifies and extracts fields
+- **📄 Multi-Format Support**: Process PDFs, images (PNG, JPG), and scanned documents
+- **🔒 Enterprise Security**: Row-level security, user isolation, OAuth authentication
+- **⚡ Real-time Processing**: Live status updates with async document processing
+- **✏️ Manual Validation**: Edit, verify, and correct AI-extracted values
+- **🎨 Modern UI**: Dark/light mode, responsive design, skeleton loading states
+- **🔄 Reprocessing**: Re-extract all fields or add new fields dynamically
+- **📊 Dashboard Analytics**: Document statistics, processing status, success rates
 
-## 🛠️ Tech Stack
+## 🏗️ Architecture Overview
 
-| Layer | Technology |
-|-------|-----------|
-| **Frontend** | Next.js 16, React 19, TypeScript, Tailwind CSS, Shadcn UI |
-| **Backend** | Supabase Edge Functions (Deno), PostgreSQL |
-| **Storage** | Supabase Storage (PDF/Images) |
-| **Auth** | Supabase Auth (Email, Google OAuth, GitHub OAuth) |
-| **AI/ML** | Azure Document Intelligence (prebuilt-invoice model) |
-| **Database** | PostgreSQL with Row-Level Security (RLS) |
+### System Architecture
 
-## 📋 Database Schema
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         CLIENT (Next.js 16)                      │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐       │
+│  │  Pages   │  │Components│  │  Hooks   │  │   Lib    │       │
+│  │ - Home   │  │ - Navbar │  │ - Session│  │ - Client │       │
+│  │ - Auth   │  │ - Cards  │  │ - Drop   │  │ - Server │       │
+│  │ - Dash   │  │ - Modal  │  │  Zone    │  │ - Edge   │       │
+│  │ - Docs   │  │ - Theme  │  │          │  │  Funcs   │       │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘       │
+└────────────────────────┬────────────────────────────────────────┘
+                         │ HTTPS + JWT Auth
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    SUPABASE PLATFORM                             │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │              EDGE FUNCTIONS (Deno Runtime)                 │ │
+│  │  ┌─────────────────┐  ┌─────────────────┐  ┌───────────┐ │ │
+│  │  │upload-document  │  │process-document │  │get-data   │ │ │
+│  │  │ - Validate user │  │ - Azure API call│  │ - Fetch   │ │ │
+│  │  │ - Generate URL  │  │ - Poll results  │  │   results │ │ │
+│  │  │ - Return signed │  │ - Save to DB    │  │ - Format  │ │ │
+│  │  └─────────────────┘  └─────────────────┘  └───────────┘ │ │
+│  └────────────────────────────────────────────────────────────┘ │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │                  POSTGRESQL DATABASE                       │ │
+│  │  Tables: profiles, documents, document_fields,            │ │
+│  │          extracted_data                                    │ │
+│  │  RLS Policies: User-scoped access control                 │ │
+│  │  Triggers: Auto-create profiles, update timestamps        │ │
+│  └────────────────────────────────────────────────────────────┘ │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │                    STORAGE BUCKETS                         │ │
+│  │  documents/ - User-scoped file storage                    │ │
+│  │  Format: {user_id}/{filename}                             │ │
+│  └────────────────────────────────────────────────────────────┘ │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │                   AUTH SYSTEM                              │ │
+│  │  Email/Password, Google OAuth, GitHub OAuth              │ │
+│  │  JWT tokens, Session management                           │ │
+│  └────────────────────────────────────────────────────────────┘ │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │ HTTPS + API Key
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              AZURE DOCUMENT INTELLIGENCE                        │
+│  Model: prebuilt-invoice                                        │
+│  - Async document analysis                                      │
+│  - Field extraction with confidence scores                      │
+│  - Support for invoices, receipts, forms                        │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-See `DATABASE_SETUP.sql` for complete schema. Key tables:
+## 🛠️ Technology Stack
 
-### Profiles
-- Stores user profile information
-- Auto-created on signup via trigger
-- RLS: Users can only access their own profile
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| **Frontend Framework** | Next.js 16 (App Router) | Server/Client components, routing, SSR |
+| **UI Library** | React 19 | Component-based UI, hooks, suspense |
+| **Language** | TypeScript | Type safety, better DX |
+| **Styling** | Tailwind CSS v4 | Utility-first CSS, dark mode |
+| **UI Components** | Shadcn UI + Radix UI | Accessible, customizable components |
+| **Icons** | Lucide React | Modern icon library |
+| **Backend Runtime** | Supabase Edge Functions (Deno) | Serverless functions |
+| **Database** | PostgreSQL 15+ | Relational data, ACID compliance |
+| **Auth** | Supabase Auth | Email, OAuth (Google/GitHub) |
+| **Storage** | Supabase Storage | S3-compatible file storage |
+| **AI/ML** | Azure Document Intelligence | Document analysis, field extraction |
+| **Form Validation** | Zod | Runtime schema validation |
+| **State Management** | React useState/useEffect | Client-side state |
+| **Session Management** | Custom hooks | Activity tracking, timeout warnings |
+| **Theme** | next-themes | Dark/light mode with persistence |
 
-### Documents
-- Stores uploaded documents metadata
-- Status tracking: pending → processing → completed/failed
-- Auto-updates processed_at timestamp when completed
+## 📊 Complete Application Workflow
 
-### Document_Fields
-- Defines which fields to extract from each document
-- Flexible field types: text, number, date, email, phone, currency, boolean
+### 1. User Registration & Authentication Flow
 
-### Extracted_Data
-- Stores extracted values with confidence scores
-- Unique constraint on (document_id, field_id) to prevent duplicates
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ User visits /auth/sign-up or /auth/login                        │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+         ┌───────────────┴──────────────┐
+         │                              │
+    Email/Password                 OAuth (Google/GitHub)
+         │                              │
+         ▼                              ▼
+┌─────────────────────┐        ┌──────────────────┐
+│ Supabase Auth       │        │ OAuth Provider   │
+│ - Create account    │        │ - Authenticate   │
+│ - Send confirm email│        │ - Return token   │
+└──────────┬──────────┘        └────────┬─────────┘
+           │                            │
+           └────────────┬───────────────┘
+                        ▼
+           ┌────────────────────────┐
+           │ Database Trigger:      │
+           │ handle_new_user()      │
+           │ - Creates profile      │
+           │ - Sets username        │
+           └────────────┬───────────┘
+                        ▼
+           ┌────────────────────────┐
+           │ Redirect to /dashboard │
+           └────────────────────────┘
+```
+
+**Files Involved:**
+- `/app/auth/sign-up/page.tsx` - Registration UI
+- `/app/auth/login/page.tsx` - Login UI
+- `/app/auth/callback/route.ts` - OAuth callback handler
+- `/lib/client.ts` - Supabase client initialization
+- `DATABASE_SETUP.sql` - Trigger definition
+
+**Functions Called:**
+1. `supabase.auth.signUp()` - Creates new user account
+2. `supabase.auth.signInWithPassword()` - Email/password login
+3. `supabase.auth.signInWithOAuth()` - OAuth login
+4. Database trigger `handle_new_user()` - Auto-creates profile
+
+---
+
+### 2. Document Upload & Processing Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 1: User navigates to /extract                              │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 2: Enter document name                                     │
+│ Component: ExtractPage - Step "name"                            │
+│ Validation: Zod schema (extractionNameSchema)                   │
+│ - Min 1 char, max 100 chars, no leading/trailing spaces         │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 3: Upload file(s)                                          │
+│ Component: ExtractPage - Step "upload"                          │
+│ - Drag & drop or file picker                                    │
+│ - Validation: Max 50MB per file, PDF/Image formats              │
+│ - Multiple files supported                                      │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 4: Configure fields to extract                             │
+│ Component: ExtractPage - Step "fields"                          │
+│ Options:                                                         │
+│  A) Quick Start - Common invoice fields (17 pre-defined)        │
+│  B) Custom Fields - Add individual fields with types            │
+│                                                                  │
+│ Field Types: text, number, currency, date, email, phone, bool   │
+│ Validation: Zod schema (fieldExtractionSchema)                  │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 5: Click "Extract Data" button                             │
+│ Function: handleExtract()                                       │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 6: Upload file to storage                                  │
+│ Function: uploadDocument(file, documentName)                    │
+│ Location: /lib/edge-functions.ts                                │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+         ┌───────────────┴───────────────┐
+         ▼                               ▼
+┌──────────────────────┐        ┌──────────────────────┐
+│ Edge Function:       │        │ Return Data:         │
+│ upload-document-     │        │ - uploadUrl (signed) │
+│ backend              │        │ - filePath           │
+│                      │        │ - publicUrl          │
+│ Actions:             │        └──────────────────────┘
+│ 1. Validate user JWT │                 │
+│ 2. Generate unique   │                 │
+│    file path         │                 │
+│ 3. Create signed URL │                 │
+│    (5min expiry)     │                 │
+└──────────────────────┘                 │
+         │                               │
+         └───────────────┬───────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 7: Client uploads file to signed URL                       │
+│ Method: PUT request with file binary                            │
+│ Headers: Content-Type, x-upsert                                 │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 8: Process document                                        │
+│ Function: processDocument(params)                               │
+│ Location: /lib/edge-functions.ts                                │
+│                                                                  │
+│ Parameters:                                                      │
+│ - documentName: string                                          │
+│ - filePath: string (storage path)                               │
+│ - publicUrl: string (HTTPS URL)                                 │
+│ - fieldsToExtract: Array<{name, type, description}>            │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Edge Function: process-document-backend                         │
+│ Location: /supabase/functions/process-document-backend/index.ts│
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+         ┌───────────────┴───────────────┐
+         ▼                               ▼
+┌──────────────────────┐        ┌──────────────────────┐
+│ Sub-Step 8.1:        │        │ Sub-Step 8.2:        │
+│ Create DB Records    │        │ Call Azure AI        │
+│                      │        │                      │
+│ 1. Insert document   │        │ 1. POST to Azure     │
+│    record            │        │    endpoint          │
+│    - user_id         │        │ 2. Send publicUrl    │
+│    - name            │        │ 3. Get operation ID  │
+│    - storage_path    │        │ 4. Poll for results  │
+│    - status:         │        │    (max 60s, 1s      │
+│      "processing"    │        │     intervals)       │
+│                      │        │ 5. Extract fields    │
+│ 2. Insert fields     │        │    from response     │
+│    records (batch)   │        │                      │
+│    - document_id     │        │                      │
+│    - name            │        │                      │
+│    - type            │        │                      │
+│    - description     │        │                      │
+└──────────────────────┘        └──────────────────────┘
+         │                               │
+         └───────────────┬───────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Sub-Step 8.3: Save extracted data                               │
+│                                                                  │
+│ For each field in Azure response:                               │
+│ 1. Find matching field by name (case-insensitive)               │
+│ 2. Extract value and confidence score                           │
+│ 3. Insert into extracted_data table                             │
+│    - document_id                                                 │
+│    - field_id                                                    │
+│    - value                                                       │
+│    - confidence                                                  │
+│                                                                  │
+│ 4. Update document status to "completed"                        │
+│ 5. Trigger updates processed_at timestamp                       │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 9: Redirect to /dashboard                                  │
+│ User sees document in list with "completed" status              │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Files Involved:**
+- `/app/extract/page.tsx` - Main upload UI
+- `/lib/edge-functions.ts` - Client-side API helpers
+- `/lib/validations.ts` - Zod schemas
+- `/supabase/functions/upload-document-backend/index.ts` - Upload handler
+- `/supabase/functions/process-document-backend/index.ts` - Processing handler
+
+**Key Functions:**
+
+1. **Client-Side (`/app/extract/page.tsx`):**
+   - `handleNameSubmit()` - Validates document name
+   - `handleFileSelect()` - Validates and stores files
+   - `handleAddField()` - Adds custom extraction field
+   - `handleQuickStart()` - Loads common invoice fields
+   - `handleExtract()` - Orchestrates upload and processing
+
+2. **API Layer (`/lib/edge-functions.ts`):**
+   - `uploadDocument(file, documentName)` - Handles file upload
+   - `processDocument(params)` - Triggers extraction
+   - `callEdgeFunction(name, payload)` - Generic edge function caller
+
+3. **Edge Functions:**
+   - `upload-document-backend` - Generates signed upload URL
+   - `process-document-backend` - Calls Azure AI, saves results
+
+---
+
+### 3. View & Manage Documents Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ User navigates to /dashboard                                    │
+│ Component: DashboardPage (Server Component)                     │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Server Component: DashboardDataWrapper                          │
+│                                                                  │
+│ 1. Get authenticated user from Supabase Auth                    │
+│    Function: supabase.auth.getUser()                            │
+│                                                                  │
+│ 2. Fetch user's documents from database                         │
+│    Function: fetchDashboardData(userId)                         │
+│    Query: SELECT * FROM documents WHERE user_id = $1            │
+│          ORDER BY created_at DESC                               │
+│                                                                  │
+│ 3. Calculate statistics:                                        │
+│    - total: Total document count                                │
+│    - completed: Status = "completed"                            │
+│    - processing: Status = "processing"                          │
+│    - failed: Status = "failed"                                  │
+│    - successRate: (completed / total) * 100                     │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Client Component: DashboardContent                              │
+│                                                                  │
+│ Displays:                                                        │
+│ - Stats cards (Total, Completed, Processing, Success Rate)      │
+│ - Search bar (filters by name)                                  │
+│ - Status filter (All, Completed, Processing, Failed)            │
+│ - Document grid (DocumentCard components)                       │
+│                                                                  │
+│ Features:                                                        │
+│ - Real-time search filtering                                    │
+│ - Status-based filtering                                        │
+│ - Delete document functionality                                 │
+│ - Navigate to document details                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Files Involved:**
+- `/app/dashboard/page.tsx` - Server component wrapper
+- `/app/dashboard/dashboard-content.tsx` - Client component UI
+- `/components/document-card.tsx` - Individual document display
+- `/lib/server.ts` - Server-side Supabase client
+
+---
+
+### 4. Document Detail & Field Management Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ User clicks on document from dashboard                          │
+│ Navigate to /documents/[id]                                     │
+│ Component: DocumentDetailPage                                   │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 1: Fetch document details                                  │
+│ Function: fetchData()                                           │
+│                                                                  │
+│ Edge Function Call: get-extracted-data-backend                  │
+│ Parameters: { documentId: string }                              │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Edge Function: get-extracted-data-backend                       │
+│ Location: /supabase/functions/get-extracted-data-backend        │
+│                                                                  │
+│ SQL Queries:                                                     │
+│ 1. Get document:                                                 │
+│    SELECT * FROM documents WHERE id = $1 AND user_id = $2       │
+│                                                                  │
+│ 2. Get fields with extracted data:                              │
+│    SELECT                                                        │
+│      df.id as field_id,                                         │
+│      df.name as field_name,                                     │
+│      df.type as field_type,                                     │
+│      df.description as field_description,                       │
+│      ed.id as extracted_id,                                     │
+│      ed.value,                                                  │
+│      ed.confidence                                              │
+│    FROM document_fields df                                      │
+│    LEFT JOIN extracted_data ed                                  │
+│      ON df.id = ed.field_id                                     │
+│    WHERE df.document_id = $1                                    │
+│    ORDER BY df.created_at ASC                                   │
+│                                                                  │
+│ Returns: { document, extractedFields }                          │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 2: Display document details                                │
+│                                                                  │
+│ UI Components:                                                   │
+│ - Document header (name, status, created date)                  │
+│ - Action buttons (Download, Delete)                             │
+│ - Add new field form                                            │
+│ - Extracted fields list (cards)                                 │
+│ - Document info sidebar (metadata)                              │
+│                                                                  │
+│ Each field card shows:                                          │
+│ - Field name and type badge                                     │
+│ - Extracted value                                               │
+│ - Confidence score (if available)                               │
+│ - Edit button                                                   │
+│ - Delete button                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### 4A. Add New Field to Existing Document
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ User enters field name and type, clicks "Add Field"             │
+│ Function: handleAddField(e)                                     │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 1: Create field record                                     │
+│ SQL: INSERT INTO document_fields                                │
+│      (document_id, name, type, description)                     │
+│      VALUES ($1, $2, $3, $4)                                    │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 2: Show "Processing..." in UI                              │
+│ Add temporary field to state with value = "Processing..."       │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 3: Get document public URL                                 │
+│ Function: supabase.storage.from('documents')                    │
+│          .getPublicUrl(storagePath)                             │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 4: Call process-document-backend                           │
+│ Parameters:                                                      │
+│ - documentId (existing)                                         │
+│ - documentName                                                  │
+│ - filePath                                                      │
+│ - publicUrl                                                     │
+│ - fieldsToExtract: [{ name, type, description }]               │
+│                                                                  │
+│ This triggers Azure extraction for ONLY the new field           │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 5: Refresh data after processing                           │
+│ Call fetchData() again to get updated extracted value           │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### 4B. Rerun All Fields
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ User clicks "Rerun Extraction" button                           │
+│ Function: handleRerun()                                         │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 1: Delete all existing extracted data                      │
+│ SQL: DELETE FROM extracted_data                                 │
+│      WHERE field_id IN (                                        │
+│        SELECT id FROM document_fields                           │
+│        WHERE document_id = $1                                   │
+│      )                                                          │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 2: Update document status to "processing"                  │
+│ SQL: UPDATE documents SET status = 'processing'                 │
+│      WHERE id = $1                                              │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 3: Get all fields for document                             │
+│ SQL: SELECT name, type, description FROM document_fields        │
+│      WHERE document_id = $1                                     │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 4: Call process-document-backend                           │
+│ Parameters: ALL fields from document                            │
+│                                                                  │
+│ This re-extracts ALL fields from the document                   │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 5: Refresh data to show new results                        │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### 4C. Edit Field Value
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ User clicks "Edit" button on a field                            │
+│ Opens FieldValidationModal component                            │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Modal shows:                                                     │
+│ - Field name (read-only)                                        │
+│ - Current value (editable input)                                │
+│ - Confidence score (if available)                               │
+│ - Save/Cancel buttons                                           │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ User modifies value and clicks "Save"                           │
+│ Function: handleSaveField(fieldId, newValue)                    │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ UPSERT into extracted_data                                      │
+│ SQL: INSERT INTO extracted_data                                 │
+│      (field_id, document_id, value, confidence)                 │
+│      VALUES ($1, $2, $3, NULL)                                  │
+│      ON CONFLICT (field_id, document_id)                        │
+│      DO UPDATE SET value = $3, confidence = NULL                │
+│                                                                  │
+│ Note: confidence = NULL indicates manual edit                   │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Update UI to reflect new value                                  │
+│ Close modal                                                     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Files Involved:**
+- `/app/documents/[id]/page.tsx` - Document detail page
+- `/components/field-validation-modal.tsx` - Edit modal
+- `/supabase/functions/get-extracted-data-backend/index.ts` - Data retrieval
+
+**Key Functions:**
+
+1. **Document Detail Page:**
+   - `fetchData()` - Loads document and fields
+   - `handleAddField()` - Adds new field with extraction
+   - `handleRerun()` - Re-extracts all fields
+   - `handleSaveField()` - Updates field value
+   - `handleDeleteField()` - Removes field
+   - `handleDelete()` - Deletes entire document
+
+---
+
+### 5. Theme Management Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Application loads with ThemeProvider                            │
+│ Location: /app/layout.tsx                                       │
+│                                                                  │
+│ <ThemeProvider                                                  │
+│   attribute="class"                                             │
+│   defaultTheme="system"                                         │
+│   enableSystem                                                  │
+│   disableTransitionOnChange                                     │
+│ >                                                               │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ ThemeToggle component in Navbar                                 │
+│ Component: /components/theme-toggle.tsx                         │
+│                                                                  │
+│ Hook: useTheme() from next-themes                               │
+│ State: theme (current: "light" | "dark" | "system")            │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+         ┌───────────────┴───────────────┐
+         ▼                               ▼
+  User clicks toggle           Theme changes
+         │                               │
+         ▼                               ▼
+  setTheme(newTheme)          <html class="dark">
+         │                     or <html class="light">
+         └───────────────┬───────────────┘
+                         ▼
+           ┌────────────────────────┐
+           │ CSS variables update   │
+           │ from globals.css       │
+           │                        │
+           │ .dark { ... }         │
+           │ :root { ... }         │
+           └────────────────────────┘
+                         ▼
+           ┌────────────────────────┐
+           │ All colors re-apply    │
+           │ Icons animate          │
+           │ (Sun ↔ Moon)          │
+           └────────────────────────┘
+```
+
+**Files Involved:**
+- `/components/theme-provider.tsx` - Theme context provider
+- `/components/theme-toggle.tsx` - Toggle button component
+- `/app/globals.css` - Theme CSS variables
+- `/app/layout.tsx` - Provider wrapper
+
+---
+
+### 6. Session Management & Security Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ User Activity Detection                                         │
+│ Hook: useSessionManager()                                       │
+│ Location: /lib/hooks.ts                                         │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Monitors user activity:                                         │
+│ - Mouse movement                                                 │
+│ - Keyboard input                                                │
+│ - Touch events                                                  │
+│                                                                  │
+│ Timers:                                                         │
+│ - Warning timeout: 25 minutes of inactivity                     │
+│ - Logout timeout: 30 minutes of inactivity                      │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+         ┌───────────────┴───────────────┐
+         ▼                               ▼
+  Activity detected              No activity for 25min
+         │                               │
+  Reset timers                    Show warning modal
+         │                               │
+         │                      ┌────────┴────────┐
+         │                      ▼                 ▼
+         │            User clicks "Stay"    5min countdown
+         │            Reset timers          No interaction
+         │                                        │
+         │                                        ▼
+         │                              Sign out user
+         │                              Redirect to /auth/login
+         └────────────────────────────────────────┘
+```
+
+**Files Involved:**
+- `/lib/hooks.ts` - useSessionManager hook
+- `/components/session-warning-modal.tsx` - Warning dialog
+
+---
+
+### 7. Middleware & Route Protection
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ User navigates to any page                                      │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ Middleware executes (middleware.ts)                             │
+│                                                                  │
+│ Protected routes:                                               │
+│ - /dashboard                                                    │
+│ - /documents/*                                                  │
+│ - /extract                                                      │
+│ - /account/*                                                    │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+         ┌───────────────┴───────────────┐
+         ▼                               ▼
+  Public route                    Protected route
+  Allow access                           │
+         │                               ▼
+         │                 ┌──────────────────────┐
+         │                 │ Check session cookie │
+         │                 └──────────┬───────────┘
+         │                            │
+         │                 ┌──────────┴───────────┐
+         │                 ▼                      ▼
+         │          Session valid         No session
+         │          Allow access          Redirect to
+         │                │               /auth/login
+         │                │                      │
+         └────────────────┴──────────────────────┘
+                          ▼
+            ┌──────────────────────┐
+            │ Render requested page│
+            └──────────────────────┘
+```
+
+**Files Involved:**
+- `/middleware.ts` - Route protection logic
+- `/lib/server.ts` - Server-side Supabase client with cookies
+
+## 📋 Database Schema & Relations
+
+### Complete Entity-Relationship Diagram
+
+```
+┌─────────────────┐
+│   auth.users    │ (Supabase Auth - managed by Supabase)
+│─────────────────│
+│ id (UUID)       │───┐
+│ email           │   │
+│ created_at      │   │
+└─────────────────┘   │
+                      │
+                      │ 1:1
+                      ▼
+┌─────────────────────────────┐
+│       profiles              │
+│─────────────────────────────│
+│ id (UUID) PK ───────────────┼─── Foreign Key → auth.users(id)
+│ username (VARCHAR)          │
+│ full_name (TEXT)            │
+│ avatar_url (TEXT)           │
+│ created_at (TIMESTAMPTZ)    │
+│ updated_at (TIMESTAMPTZ)    │
+└─────────────────────────────┘
+         │
+         │ 1:N
+         ▼
+┌─────────────────────────────┐
+│       documents             │
+│─────────────────────────────│
+│ id (UUID) PK                │
+│ user_id (UUID) FK ──────────┼─── Foreign Key → profiles(id)
+│ name (TEXT)                 │
+│ storage_path (TEXT)         │─── Path: {user_id}/{filename}
+│ status (VARCHAR)            │─── Values: processing, completed, failed
+│ created_at (TIMESTAMPTZ)    │
+│ processed_at (TIMESTAMPTZ)  │─── Auto-set by trigger
+└─────────────────────────────┘
+         │
+         │ 1:N
+         ▼
+┌─────────────────────────────┐
+│    document_fields          │
+│─────────────────────────────│
+│ id (UUID) PK                │
+│ document_id (UUID) FK ──────┼─── Foreign Key → documents(id)
+│ name (TEXT)                 │─── Field identifier
+│ type (VARCHAR)              │─── text, number, date, email, phone,
+│ description (TEXT)          │    currency, boolean
+│ created_at (TIMESTAMPTZ)    │
+└─────────────────────────────┘
+         │
+         │ 1:1 or 1:0
+         ▼
+┌─────────────────────────────┐
+│     extracted_data          │
+│─────────────────────────────│
+│ id (UUID) PK                │
+│ field_id (UUID) FK ─────────┼─── Foreign Key → document_fields(id)
+│ document_id (UUID) FK ──────┼─── Foreign Key → documents(id)
+│ value (TEXT)                │─── Extracted/edited value
+│ confidence (NUMERIC)        │─── AI confidence (0-1), NULL if manual
+│ created_at (TIMESTAMPTZ)    │
+│ updated_at (TIMESTAMPTZ)    │
+│                             │
+│ UNIQUE(field_id,            │
+│        document_id)         │─── Prevents duplicate extractions
+└─────────────────────────────┘
+```
+
+### Table Details
+
+#### 1. `profiles`
+**Purpose**: Store user profile information
+**RLS Policy**: Users can only read/update their own profile
+**Trigger**: Auto-created on user signup via `handle_new_user()`
+
+```sql
+CREATE TABLE profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  username VARCHAR(24) UNIQUE,
+  full_name TEXT,
+  avatar_url TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+**RLS Policies:**
+- SELECT: `auth.uid() = id`
+- UPDATE: `auth.uid() = id`
+- INSERT: `auth.uid() = id`
+
+---
+
+#### 2. `documents`
+**Purpose**: Store document metadata and processing status
+**RLS Policy**: Users can only access their own documents
+**Cascade**: Deleting a document deletes all related fields and extracted data
+
+```sql
+CREATE TABLE documents (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  storage_path TEXT NOT NULL,
+  status VARCHAR(20) DEFAULT 'processing',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  processed_at TIMESTAMPTZ
+);
+```
+
+**Status Values:**
+- `processing` - Document is being analyzed
+- `completed` - Extraction successful
+- `failed` - Extraction failed
+
+**RLS Policies:**
+- SELECT: `auth.uid() = user_id`
+- INSERT: `auth.uid() = user_id`
+- UPDATE: `auth.uid() = user_id`
+- DELETE: `auth.uid() = user_id`
+
+**Indexes:**
+- `idx_documents_user_id` ON (user_id)
+- `idx_documents_status` ON (status)
+
+---
+
+#### 3. `document_fields`
+**Purpose**: Define which fields to extract from each document
+**RLS Policy**: Users can only access fields for their own documents
+**Cascade**: Deleting a field deletes its extracted data
+
+```sql
+CREATE TABLE document_fields (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  type VARCHAR(50) DEFAULT 'text',
+  description TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+**Field Types:**
+- `text` - General text (default)
+- `number` - Numeric values
+- `currency` - Monetary amounts
+- `date` - Date values
+- `email` - Email addresses
+- `phone` - Phone numbers
+- `boolean` - Yes/No, True/False
+
+**RLS Policies:**
+- SELECT: `EXISTS (SELECT 1 FROM documents d WHERE d.id = document_id AND d.user_id = auth.uid())`
+- INSERT: `EXISTS (SELECT 1 FROM documents d WHERE d.id = document_id AND d.user_id = auth.uid())`
+- DELETE: `EXISTS (SELECT 1 FROM documents d WHERE d.id = document_id AND d.user_id = auth.uid())`
+
+**Indexes:**
+- `idx_document_fields_document_id` ON (document_id)
+
+---
+
+#### 4. `extracted_data`
+**Purpose**: Store AI-extracted or manually-entered field values
+**RLS Policy**: Users can only access data for their own documents
+**Constraint**: One value per field per document (UNIQUE constraint)
+
+```sql
+CREATE TABLE extracted_data (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  field_id UUID NOT NULL REFERENCES document_fields(id) ON DELETE CASCADE,
+  document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+  value TEXT,
+  confidence NUMERIC(5,4),  -- 0.0000 to 1.0000
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(field_id, document_id)
+);
+```
+
+**Confidence Score:**
+- `0.0 - 1.0` - AI extraction confidence
+- `NULL` - Manually edited value
+
+**RLS Policies:**
+- SELECT: `EXISTS (SELECT 1 FROM documents d WHERE d.id = document_id AND d.user_id = auth.uid())`
+- INSERT: `EXISTS (SELECT 1 FROM documents d WHERE d.id = document_id AND d.user_id = auth.uid())`
+- UPDATE: `EXISTS (SELECT 1 FROM documents d WHERE d.id = document_id AND d.user_id = auth.uid())`
+- DELETE: `EXISTS (SELECT 1 FROM documents d WHERE d.id = document_id AND d.user_id = auth.uid())`
+
+**Indexes:**
+- `idx_extracted_data_field_id` ON (field_id)
+- `idx_extracted_data_document_id` ON (document_id)
+
+---
+
+### Database Triggers
+
+#### 1. `handle_new_user()`
+**Purpose**: Auto-create profile when user signs up
+**Trigger**: `on_auth_user_created` (Supabase Auth event)
+**When**: AFTER INSERT ON auth.users
+
+```sql
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, username, full_name, avatar_url)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'username', split_part(NEW.email, '@', 1)),
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name'),
+    NEW.raw_user_meta_data->>'avatar_url'
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+```
+
+**What it does:**
+1. Extracts metadata from OAuth or signup form
+2. Creates profile record with same UUID as auth.users
+3. Sets username (from metadata or email prefix)
+4. Sets full_name and avatar_url if available
+
+---
+
+#### 2. `update_document_processed_at()`
+**Purpose**: Auto-set processed_at timestamp when document completes
+**Trigger**: `document_processed_at_trigger`
+**When**: AFTER UPDATE ON documents (when status changes to 'completed')
+
+```sql
+CREATE OR REPLACE FUNCTION update_document_processed_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.status = 'completed' AND OLD.status != 'completed' THEN
+    NEW.processed_at = NOW();
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+**What it does:**
+1. Monitors status column changes
+2. When status becomes 'completed', sets processed_at to current timestamp
+3. Only triggers on status change (not on subsequent updates)
+
+---
 
 ### Storage Buckets
-- `documents` bucket: Stores PDFs and images
-- User-scoped paths: `user_id/filename` format
-- Public read for Azure Document Intelligence processing
 
-## 📁 Project Structure
+#### `documents` Bucket
 
+**Purpose**: Store uploaded PDF and image files
+**Access**: Public (required for Azure Document Intelligence to access files)
+**Path Structure**: `{user_id}/{filename}`
+
+**Configuration:**
+```sql
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('documents', 'documents', true);
 ```
-DocExt/
-├── app/                                    # Next.js app directory
-│   ├── page.tsx                           # Landing page
-│   ├── layout.tsx                         # Root layout
-│   ├── globals.css                        # Global styles
-│   ├── auth/
-│   │   ├── login/page.tsx                # Email + OAuth login
-│   │   ├── sign-up/page.tsx              # Registration
-│   │   ├── confirm/page.tsx              # Email confirmation
-│   │   ├── sign-up-success/page.tsx      # Confirmation message
-│   │   └── callback/route.ts             # OAuth redirect handler
-│   ├── dashboard/page.tsx                 # User's documents list
-│   ├── extract/page.tsx                   # Upload & configure extraction
-│   ├── document/[id]/page.tsx            # Document details & field editing
-│   └── profile/page.tsx                   # User profile settings
-│
-├── components/
-│   ├── navbar.tsx                         # Navigation bar
-│   ├── document-card.tsx                  # Document card component
-│   ├── field-validation-modal.tsx         # Field editing modal
-│   └── ui/                                # Shadcn UI components library
-│
-├── lib/
-│   ├── client.ts                          # Supabase client (browser)
-│   ├── server.ts                          # Supabase client (server)
-│   ├── edge-functions.ts                  # Edge function API helpers
-│   └── utils.ts                           # Utility functions
-│
-├── supabase/
-│   ├── config.toml                        # Supabase local config
-│   ├── functions/
-│   │   ├── upload-document-backend/
-│   │   │   └── index.ts                   # Generate signed upload URLs
-│   │   ├── process-document-backend/
-│   │   │   └── index.ts                   # Call Azure AI & save results
-│   │   ├── get-extracted-data-backend/
-│   │   │   └── index.ts                   # Retrieve extracted data
-│   │   └── _shared/
-│   │       └── cors.ts                    # CORS header utilities
-│   └── DEPLOYMENT.md                      # Edge function deployment guide
-│
-├── public/                                 # Static assets
-├── scripts/
-│   └── 002_create_storage_bucket.sql      # Storage bucket setup (reference)
-│
-├── middleware.ts                           # Auth middleware for protected routes
-├── DATABASE_SETUP.sql                      # Complete database schema & setup
-├── README.md                               # This file
-├── package.json                            # Dependencies & scripts
-├── tsconfig.json                           # TypeScript config
-├── next.config.ts                          # Next.js config
-├── tailwind.config.mjs                     # Tailwind CSS config
-├── postcss.config.mjs                      # PostCSS config
-├── eslint.config.mjs                       # ESLint config
-└── components.json                         # Shadcn UI config
-```
+
+**RLS Policies:**
+- **INSERT**: Users can only upload to their own folder
+  ```sql
+  (bucket_id = 'documents' AND (storage.foldername(name))[1] = auth.uid()::text)
+  ```
+
+- **SELECT**: Users can only view their own files
+  ```sql
+  (bucket_id = 'documents' AND (storage.foldername(name))[1] = auth.uid()::text)
+  ```
+
+- **DELETE**: Users can only delete their own files
+  ```sql
+  (bucket_id = 'documents' AND (storage.foldername(name))[1] = auth.uid()::text)
+  ```
+
+**File Types Accepted:**
+- PDF: `application/pdf`
+- Images: `image/png`, `image/jpeg`, `image/jpg`
+
+**Size Limit**: 50MB per file (enforced in client-side validation)
 
 ## 🚀 Getting Started
 
@@ -243,57 +1115,351 @@ npm run secrets:set          # Set Edge Function secrets
 - Secrets stored securely (not in code)
 - No sensitive data in client code
 
-## 🔄 Data Flow
+## 📁 Project Structure
 
 ```
-User Upload
-    ↓
-Frontend validates file
-    ↓
-Edge Function: upload-document-backend
-    ├─ Generates signed upload URL
-    ├─ Returns path & public URL
-    └─ Frontend uploads file
-    ↓
-Frontend calls: process-document-backend
-    ├─ Creates document record (status: processing)
-    ├─ Creates field definitions
-    ├─ Calls Azure Document Intelligence API
-    ├─ Polls for results (max 60 seconds)
-    ├─ Saves extracted data with confidence scores
-    └─ Updates document status: completed
-    ↓
-Frontend redirects to dashboard
-    ↓
-User clicks on document
-    ↓
-Edge Function: get-extracted-data-backend
-    ├─ Retrieves document
-    ├─ Retrieves extracted fields
-    └─ Returns formatted data
-    ↓
-Frontend displays document details
-    └─ User can edit/validate field values
+DocExt/
+├── app/                                          # Next.js App Router
+│   ├── page.tsx                                 # Landing page (home)
+│   ├── layout.tsx                               # Root layout with ThemeProvider
+│   ├── globals.css                              # Global styles + dark mode
+│   │
+│   ├── auth/                                    # Authentication pages
+│   │   ├── login/page.tsx                      # Email + OAuth login
+│   │   ├── sign-up/page.tsx                    # Registration form
+│   │   ├── confirm/page.tsx                    # Email confirmation page
+│   │   ├── sign-up-success/page.tsx            # Post-signup message
+│   │   ├── forgot-password/page.tsx            # Password reset request
+│   │   ├── reset-password/page.tsx             # New password form
+│   │   └── callback/route.ts                   # OAuth redirect handler
+│   │
+│   ├── dashboard/                               # Main dashboard
+│   │   ├── page.tsx                            # Server component wrapper
+│   │   ├── dashboard-content.tsx               # Client component UI
+│   │   └── loading.tsx                         # Skeleton loading state
+│   │
+│   ├── documents/                               # Document management
+│   │   ├── page.tsx                            # Documents list page
+│   │   ├── loading.tsx                         # List loading skeleton
+│   │   └── [id]/                               # Dynamic document detail
+│   │       ├── page.tsx                        # Detail page with fields
+│   │       └── loading.tsx                     # Detail loading skeleton
+│   │
+│   ├── extract/page.tsx                         # Document upload flow
+│   ├── account/profile/                         # User profile
+│   │   ├── page.tsx                            # Profile settings
+│   │   └── loading.tsx                         # Profile loading skeleton
+│   │
+│   ├── privacy/page.tsx                         # Privacy policy
+│   ├── terms/page.tsx                           # Terms of service
+│   └── api/env-check/route.ts                   # Environment check endpoint
+│
+├── components/                                   # React components
+│   ├── navbar.tsx                               # Main navigation
+│   ├── document-card.tsx                        # Document grid item
+│   ├── document-card-skeleton.tsx               # Loading placeholder
+│   ├── field-validation-modal.tsx               # Edit field modal
+│   ├── home-sections.tsx                        # Landing page sections
+│   ├── auth-form.tsx                            # Reusable auth form
+│   ├── session-warning-modal.tsx                # Session timeout warning
+│   ├── theme-provider.tsx                       # next-themes wrapper
+│   ├── theme-toggle.tsx                         # Dark/light mode toggle
+│   ├── skeletons.tsx                            # Various loading skeletons
+│   │
+│   └── ui/                                      # Shadcn UI primitives
+│       ├── button.tsx                           # Button component
+│       ├── card.tsx                             # Card component
+│       ├── input.tsx                            # Input component
+│       ├── label.tsx                            # Label component
+│       ├── dialog.tsx                           # Modal dialog
+│       ├── dropdown-menu.tsx                    # Dropdown component
+│       └── skeleton.tsx                         # Skeleton loader
+│
+├── lib/                                          # Utility libraries
+│   ├── client.ts                                # Supabase client (browser)
+│   ├── server.ts                                # Supabase client (server)
+│   ├── edge-functions.ts                        # Edge function helpers
+│   ├── hooks.ts                                 # Custom React hooks
+│   ├── validations.ts                           # Zod schemas
+│   └── utils.ts                                 # Utility functions (cn, etc)
+│
+├── supabase/                                     # Supabase configuration
+│   ├── config.toml                              # Local Supabase config
+│   │
+│   └── functions/                               # Edge Functions (Deno)
+│       ├── upload-document-backend/
+│       │   └── index.ts                         # Generate signed upload URLs
+│       │
+│       ├── process-document-backend/
+│       │   └── index.ts                         # Azure AI processing
+│       │                                        # - Call Azure API
+│       │                                        # - Poll for results
+│       │                                        # - Save to database
+│       │
+│       ├── get-extracted-data-backend/
+│       │   └── index.ts                         # Fetch document + fields
+│       │
+│       └── _shared/
+│           └── cors.ts                          # CORS utility
+│
+├── middleware.ts                                 # Route protection
+├── DATABASE_SETUP.sql                            # Complete DB schema
+├── .env.local                                    # Environment variables
+├── package.json                                  # Dependencies & scripts
+├── tsconfig.json                                 # TypeScript config
+├── next.config.ts                                # Next.js config
+├── tailwind.config.ts                            # Tailwind config
+└── components.json                               # Shadcn UI config
 ```
 
-## 📊 Database Triggers
+---
 
-### handle_new_user()
-- **Trigger**: `on_auth_user_created`
-- **When**: New user signs up
-- **Action**: Auto-creates profile record with username, full_name, avatar_url
+## 🌐 API Reference
 
-### update_document_processed_at()
-- **Trigger**: `document_processed_at_trigger`
-- **When**: Document status changes to "completed"
-- **Action**: Auto-sets processed_at timestamp
+### Edge Functions (Supabase)
 
-## 🌐 API Endpoints
+All Edge Functions require authentication via JWT token in the `Authorization` header.
 
-### Edge Functions
-- `POST /functions/v1/upload-document-backend` - Generate upload URL
-- `POST /functions/v1/process-document-backend` - Process document
-- `POST /functions/v1/get-extracted-data-backend` - Get extracted data
+#### 1. `upload-document-backend`
+
+**Purpose**: Generate a signed upload URL for Supabase Storage
+
+**Endpoint**: `POST /functions/v1/upload-document-backend`
+
+**Request Body:**
+```typescript
+{
+  fileName: string      // Original filename
+  fileType: string      // MIME type (e.g., "application/pdf")
+  fileSize: number      // File size in bytes
+}
+```
+
+**Response:**
+```typescript
+{
+  uploadUrl: string     // Signed URL for PUT upload (5min expiry)
+  filePath: string      // Storage path: {user_id}/{unique_filename}
+  publicUrl: string     // Public HTTPS URL for the file
+}
+```
+
+**Client Usage:**
+```typescript
+import { uploadDocument } from '@/lib/edge-functions'
+
+const { data, error } = await uploadDocument(file, documentName)
+if (data) {
+  console.log('File uploaded to:', data.filePath)
+  console.log('Public URL:', data.publicUrl)
+}
+```
+
+**Process Flow:**
+1. Validates user authentication
+2. Generates unique filename with timestamp
+3. Creates storage path: `{user_id}/{timestamp}_{filename}`
+4. Generates signed upload URL (5-minute expiry)
+5. Gets public URL for the file
+6. Returns all URLs to client
+
+**Error Responses:**
+- `401 Unauthorized` - Missing or invalid JWT token
+- `400 Bad Request` - Missing required fields
+- `500 Internal Server Error` - Storage service error
+
+---
+
+#### 2. `process-document-backend`
+
+**Purpose**: Process document with Azure Document Intelligence and save results
+
+**Endpoint**: `POST /functions/v1/process-document-backend`
+
+**Request Body:**
+```typescript
+{
+  documentId?: string                    // Optional: existing document ID
+  documentName: string                   // Document name/title
+  filePath: string                       // Storage path from upload
+  publicUrl: string                      // Public HTTPS URL
+  fieldsToExtract: Array<{              // Fields to extract
+    name: string                         // Field identifier
+    type?: string                        // Field type (default: 'text')
+    description?: string                 // Field description
+  }> | string[]                          // Can also be simple string array
+}
+```
+
+**Response:**
+```typescript
+{
+  documentId: string                     // Created/updated document ID
+  status: string                         // Processing status
+  extractedFields: Array<{
+    fieldName: string
+    value: string
+    confidence: number                   // 0.0 - 1.0
+  }>
+}
+```
+
+**Client Usage:**
+```typescript
+import { processDocument } from '@/lib/edge-functions'
+
+const { data, error } = await processDocument({
+  documentName: 'Invoice-2024',
+  filePath: 'user-id/invoice.pdf',
+  publicUrl: 'https://...',
+  fieldsToExtract: [
+    { name: 'InvoiceId', type: 'text', description: 'Invoice number' },
+    { name: 'InvoiceTotal', type: 'currency', description: 'Total amount' },
+    { name: 'InvoiceDate', type: 'date', description: 'Invoice date' }
+  ]
+})
+```
+
+**Process Flow:**
+1. Validates user authentication
+2. Creates/updates document record (status: 'processing')
+3. Inserts field definitions into document_fields table
+4. Calls Azure Document Intelligence API
+5. Polls operation URL for results (max 60 attempts, 1s intervals)
+6. Extracts field values from Azure response
+7. Saves to extracted_data table with confidence scores
+8. Updates document status to 'completed' or 'failed'
+9. Returns results
+
+**Azure Integration:**
+- API: Azure Document Intelligence REST API v2024-02-29-preview
+- Model: prebuilt-invoice (configurable via env var)
+- Timeout: 60 seconds maximum polling
+- Polling Interval: 1 second
+
+**Error Responses:**
+- `401 Unauthorized` - Missing or invalid JWT token
+- `400 Bad Request` - Missing required fields
+- `500 Internal Server Error` - Azure API error or database error
+- `408 Request Timeout` - Azure processing exceeded 60s
+
+---
+
+#### 3. `get-extracted-data-backend`
+
+**Purpose**: Retrieve document metadata and all extracted field values
+
+**Endpoint**: `POST /functions/v1/get-extracted-data-backend`
+
+**Request Body:**
+```typescript
+{
+  documentId: string                     // Document UUID
+}
+```
+
+**Response:**
+```typescript
+{
+  document: {
+    id: string
+    name: string
+    storagePath: string
+    status: string                       // 'processing' | 'completed' | 'failed'
+    createdAt: string                    // ISO 8601 timestamp
+    processedAt: string | null           // ISO 8601 timestamp
+  },
+  extractedFields: Array<{
+    id: string                           // Extracted data record ID
+    fieldId: string                      // Field definition ID
+    fieldName: string                    // Field name
+    fieldType: string                    // Field type
+    fieldDescription: string             // Field description
+    value: string                        // Extracted/edited value
+    confidence: number | null            // AI confidence (null if manual edit)
+  }>
+}
+```
+
+**Client Usage:**
+```typescript
+import { getExtractedData } from '@/lib/edge-functions'
+
+const { data, error } = await getExtractedData(documentId)
+if (data) {
+  console.log('Document:', data.document.name)
+  console.log('Fields:', data.extractedFields)
+}
+```
+
+**Process Flow:**
+1. Validates user authentication
+2. Fetches document record (with user_id check via RLS)
+3. Fetches all fields for document
+4. LEFT JOINs with extracted_data to include values
+5. Returns formatted response
+
+**SQL Query:**
+```sql
+SELECT 
+  df.id as field_id,
+  df.name as field_name,
+  df.type as field_type,
+  df.description as field_description,
+  ed.id as extracted_id,
+  ed.value,
+  ed.confidence
+FROM document_fields df
+LEFT JOIN extracted_data ed ON df.id = ed.field_id
+WHERE df.document_id = $1
+ORDER BY df.created_at ASC
+```
+
+**Error Responses:**
+- `401 Unauthorized` - Missing or invalid JWT token
+- `404 Not Found` - Document not found or belongs to different user
+- `500 Internal Server Error` - Database error
+
+---
+
+### Client-Side API Functions
+
+Located in `/lib/edge-functions.ts`
+
+#### `callEdgeFunction<T>(functionName: string, payload: any)`
+
+Generic helper for calling any Supabase Edge Function with authentication.
+
+**Returns:** `Promise<{ data?: T; error?: string }>`
+
+**Features:**
+- Automatic JWT token injection
+- Error handling
+- Type-safe responses
+
+---
+
+#### `uploadDocument(file: File, documentName: string)`
+
+Uploads a file to Supabase Storage via the upload-document-backend edge function.
+
+**Returns:** `Promise<{ data?: { filePath: string; publicUrl: string }; error?: string }>`
+
+---
+
+#### `processDocument(params: ProcessParams)`
+
+Processes a document with Azure Document Intelligence.
+
+**Returns:** `Promise<{ data?: ProcessResponse; error?: string }>`
+
+---
+
+#### `getExtractedData(documentId: string)`
+
+Fetches document details and extracted field values.
+
+**Returns:** `Promise<{ data?: DocumentData; error?: string }>`
 
 ## 📝 Environment Setup
 
