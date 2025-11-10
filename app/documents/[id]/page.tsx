@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { createClient } from "@/lib/client"
 import { useSessionManager } from "@/lib/useSessionManager"
 import { SessionWarningModal } from "@/components/session-warning-modal"
+import { PDFViewerSidebar } from "@/components/pdf-viewer-sidebar"
 import { getExtractedData, processDocument } from "@/lib/edge-functions"
 import { Button } from "@/components/ui/button"
 
@@ -46,6 +47,8 @@ export default function DocumentDetailPage() {
   const [newFieldType, setNewFieldType] = useState("text")
   const [selectedField, setSelectedField] = useState<ExtractedField | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [pdfSidebarOpen, setPdfSidebarOpen] = useState(false)
+  const [selectedFieldForPDF, setSelectedFieldForPDF] = useState<ExtractedField | null>(null)
   const router = useRouter()
   const supabase = createClient()
   
@@ -327,10 +330,10 @@ export default function DocumentDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-linear-to-b from-background to-muted">
+      <div className="min-h-screen bg-white dark:bg-slate-900 text-gray-900 dark:text-white">
         <Navbar />
         <div className="flex items-center justify-center h-96">
-          <p className="text-muted-foreground">Loading document...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading document...</p>
         </div>
       </div>
     )
@@ -338,32 +341,33 @@ export default function DocumentDetailPage() {
 
   if (!document) {
     return (
-      <div className="min-h-screen bg-linear-to-b from-background to-muted">
+      <div className="min-h-screen bg-white dark:bg-slate-900 text-gray-900 dark:text-white">
         <Navbar />
         <div className="flex items-center justify-center h-96">
-          <p className="text-muted-foreground">Document not found</p>
+          <p className="text-gray-600 dark:text-gray-400">Document not found</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-b from-background to-muted">
+    <div className="min-h-screen bg-white dark:bg-slate-900 text-gray-900 dark:text-white">
       <Navbar />
       <SessionWarningModal open={showWarning} onExtend={extendSession} />
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
-        {/* Header */}
-        <Link href="/documents" className="flex items-center gap-2 text-primary hover:underline mb-6">
+      <div className={`transition-all duration-300 ease-out ${pdfSidebarOpen ? "lg:pr-[50%]" : "pr-0"}`}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
+          {/* Header */}
+          <Link href="/documents" className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline mb-6">
           <ArrowLeft className="h-4 w-4" />
           Back to Documents
         </Link>
 
         <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold mb-2">{document.name}</h1>
-            <p className="text-muted-foreground">
-              Status: <span className={`capitalize font-medium ${isProcessing || document.status === 'processing' ? 'text-yellow-500 dark:text-yellow-400' : ''}`}>
+            <h1 className="text-3xl sm:text-4xl font-bold mb-2">{document.name}</h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Status: <span className={`capitalize font-medium ${isProcessing || document.status === 'processing' ? 'text-yellow-500 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'}`}>
                 {isProcessing ? 'processing' : document.status}
               </span> • {fields.length} field{fields.length !== 1 ? "s" : ""}
             </p>
@@ -373,7 +377,7 @@ export default function DocumentDetailPage() {
               variant="outline" 
               onClick={handleExportData} 
               disabled={fields.length === 0 || isProcessing} 
-              className="gap-2"
+              className="gap-2 text-gray-900 dark:text-white border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-700"
             >
               <Download className="h-4 w-4" />
               Export
@@ -382,7 +386,7 @@ export default function DocumentDetailPage() {
               variant="outline" 
               onClick={handleRerun} 
               disabled={fields.length === 0 || isProcessing} 
-              className="gap-2"
+              className="gap-2 text-gray-900 dark:text-white border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-700"
             >
               <RotateCcw className={`h-4 w-4 ${isProcessing ? 'animate-spin' : ''}`} />
               {isProcessing ? 'Processing...' : 'Re-run'}
@@ -394,23 +398,23 @@ export default function DocumentDetailPage() {
           {/* Fields Column */}
           <div className="lg:col-span-2 space-y-6">
             {/* Add New Field */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Add Field</CardTitle>
+            <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
+              <CardHeader className="border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
+                <CardTitle className="text-lg text-gray-900 dark:text-white">Add Field</CardTitle>
               </CardHeader>
-              <CardContent>
-                <form onSubmit={handleAddField} className="flex flex-col gap-3">
-                  <div className="flex gap-2">
+              <CardContent className="pt-6">
+                <form onSubmit={handleAddField} className="flex flex-col gap-3 sm:gap-4">
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                     <Input
                       placeholder="Field name"
                       value={newFieldName}
                       onChange={(e) => setNewFieldName(e.target.value)}
-                      className="flex-1"
+                      className="flex-1 bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                     />
                     <select
                       value={newFieldType}
                       onChange={(e) => setNewFieldType(e.target.value)}
-                      className="h-9 rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:focus-visible:ring-slate-600"
+                      className="h-9 rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-600"
                     >
                       <option value="text">Text</option>
                       <option value="number">Number</option>
@@ -422,7 +426,7 @@ export default function DocumentDetailPage() {
                       <option value="url">URL</option>
                     </select>
                   </div>
-                  <Button type="submit" className="gap-2 w-full" disabled={isProcessing}>
+                  <Button type="submit" className="gap-2 w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white disabled:opacity-60" disabled={isProcessing}>
                     <Plus className="h-4 w-4" />
                     {isProcessing ? 'Adding & Extracting...' : 'Add Field'}
                   </Button>
@@ -431,59 +435,81 @@ export default function DocumentDetailPage() {
             </Card>
 
             {/* Extracted Fields */}
-            <div className="space-y-3">
+            <div className="space-y-3 sm:space-y-4">
               {fields.length === 0 ? (
-                <Card>
-                  <CardContent className="py-8 text-center text-muted-foreground">
+                <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
+                  <CardContent className="py-8 text-center text-gray-600 dark:text-gray-400">
                     No fields extracted yet.
                   </CardContent>
                 </Card>
               ) : (
                 fields.map((field) => (
-                  <Card key={field.id} className="hover:shadow-md transition">
+                  <Card key={field.id} className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:shadow-md dark:hover:shadow-lg transition cursor-pointer" onClick={() => {
+                    setSelectedFieldForPDF(field)
+                    setPdfSidebarOpen(true)
+                  }}>
                     <CardContent className="py-4">
                       <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <p className="text-sm font-semibold text-muted-foreground">{field.fieldName}</p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">{field.fieldName}</p>
                             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                              field.fieldType === 'currency' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                              field.fieldType === 'date' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
-                              field.fieldType === 'number' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                              field.fieldType === 'email' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
-                              field.fieldType === 'phone' ? 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400' :
-                              field.fieldType === 'address' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' :
-                              field.fieldType === 'url' ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400' :
-                              'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
+                              field.fieldType === 'currency' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' :
+                              field.fieldType === 'date' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' :
+                              field.fieldType === 'number' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' :
+                              field.fieldType === 'email' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300' :
+                              field.fieldType === 'phone' ? 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300' :
+                              field.fieldType === 'address' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' :
+                              field.fieldType === 'url' ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300' :
+                              'bg-gray-100 text-gray-700 dark:bg-gray-900/40 dark:text-gray-300'
                             }`}>
                               {field.fieldType}
                             </span>
                           </div>
-                          <p className="text-base font-medium">{field.value || "Not extracted"}</p>
+                          <p className="text-base font-medium break-words text-gray-900 dark:text-white">{field.value || "Not extracted"}</p>
                           {field.confidence && (
-                            <p className="text-xs text-muted-foreground mt-2">
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
                               Confidence: {(field.confidence * 100).toFixed(0)}%
                             </p>
                           )}
                         </div>
                         <div className="flex gap-2 shrink-0">
                           <Button
-                            variant="ghost"
+                            variant="default"
                             size="sm"
-                            onClick={() => {
-                              setSelectedField(field)
-                              setIsModalOpen(true)
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedFieldForPDF(field)
+                              setPdfSidebarOpen(true)
                             }}
-                            className="gap-2"
+                            className="gap-2 whitespace-nowrap bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white"
+                            title="View in PDF"
                           >
                             <Eye className="h-4 w-4" />
-                            View
+                            View PDF
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDeleteField(field.fieldId)}
-                            className="text-destructive hover:bg-destructive/10"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedField(field)
+                              setIsModalOpen(true)
+                            }}
+                            className="gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-slate-700"
+                            title="Edit value"
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDeleteField(field.fieldId)
+                            }}
+                            className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950"
+                            title="Delete field"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -498,23 +524,23 @@ export default function DocumentDetailPage() {
 
           {/* Document Info Sidebar */}
           <div>
-            <Card className="sticky top-20">
-              <CardHeader>
-                <CardTitle className="text-lg">Document Info</CardTitle>
+            <Card className="sticky top-20 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
+              <CardHeader className="border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
+                <CardTitle className="text-lg text-gray-900 dark:text-white">Document Info</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 pt-6">
                 <div>
-                  <p className="text-sm text-muted-foreground">Status</p>
-                  <p className="font-medium capitalize">{document.status}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Status</p>
+                  <p className="font-medium capitalize text-gray-900 dark:text-white">{document.status}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Created</p>
-                  <p className="font-medium">{new Date(document.createdAt).toLocaleDateString()}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Created</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{new Date(document.createdAt).toLocaleDateString()}</p>
                 </div>
                 {document.processedAt && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Processed</p>
-                    <p className="font-medium">{new Date(document.processedAt).toLocaleDateString()}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Processed</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{new Date(document.processedAt).toLocaleDateString()}</p>
                   </div>
                 )}
                 <div>
@@ -525,19 +551,35 @@ export default function DocumentDetailPage() {
             </Card>
           </div>
         </div>
+
+        {/* Validation Modal */}
+        {selectedField && (
+          <FieldValidationModal
+            isOpen={isModalOpen}
+            field={selectedField}
+            documentUrl={document.storagePath}
+            onClose={() => {
+              setIsModalOpen(false)
+              setSelectedField(null)
+            }}
+            onFieldValueChange={handleFieldValueChange}
+          />
+        )}
+        </div>
       </div>
 
-      {/* Validation Modal */}
-      {selectedField && (
-        <FieldValidationModal
-          isOpen={isModalOpen}
-          field={selectedField}
-          documentUrl={document.storagePath}
+      {/* PDF Viewer Sidebar */}
+      {selectedFieldForPDF && document && (
+        <PDFViewerSidebar
+          isOpen={pdfSidebarOpen}
           onClose={() => {
-            setIsModalOpen(false)
-            setSelectedField(null)
+            setPdfSidebarOpen(false)
+            setTimeout(() => setSelectedFieldForPDF(null), 300)
           }}
-          onFieldValueChange={handleFieldValueChange}
+          pdfUrl={supabase.storage.from('documents').getPublicUrl(document.storagePath).data.publicUrl}
+          fieldName={selectedFieldForPDF.fieldName}
+          fieldValue={selectedFieldForPDF.value}
+          confidence={selectedFieldForPDF.confidence || undefined}
         />
       )}
     </div>

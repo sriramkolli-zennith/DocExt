@@ -55,32 +55,32 @@ export default function AuthForm({
   onOAuthLogin,
 }: AuthFormProps) {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-10 bg-linear-to-b from-background to-muted">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 py-10 sm:py-12 bg-white dark:bg-slate-900">
       <div className="w-full max-w-sm">
-        <div className="flex items-center justify-center gap-2 mb-8">
-          <FileText className="h-6 w-6 text-primary" />
-          <span className="text-lg font-bold">DocExtract</span>
+        <div className="flex items-center justify-center gap-2 mb-8 sm:mb-10">
+          <FileText className="h-6 w-6 sm:h-7 sm:w-7 text-blue-600 dark:text-blue-400" />
+          <span className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">DocExtract</span>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">{title}</CardTitle>
-            <CardDescription>{description}</CardDescription>
+        <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 shadow-lg">
+          <CardHeader className="border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
+            <CardTitle className="text-2xl sm:text-3xl text-gray-900 dark:text-white">{title}</CardTitle>
+            <CardDescription className="text-gray-600 dark:text-gray-400">{description}</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6 sm:pt-8">
             <div className="space-y-4">
               {children}
-              {error && <p className="text-sm text-destructive">{error}</p>}
+              {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
             </div>
 
             {showOAuth && (
               <>
-                <div className="relative my-4">
+                <div className="relative my-4 sm:my-6">
                   <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
+                    <span className="w-full border-t border-gray-300 dark:border-slate-600" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                    <span className="bg-white dark:bg-slate-800 px-2 text-gray-600 dark:text-gray-400">Or continue with</span>
                   </div>
                 </div>
 
@@ -89,7 +89,7 @@ export default function AuthForm({
                     type="button"
                     variant="outline"
                     onClick={() => onOAuthLogin?.("google")}
-                    className="w-full"
+                    className="w-full text-gray-900 dark:text-white border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-700"
                   >
                     <GoogleIcon />
                     Google
@@ -98,7 +98,7 @@ export default function AuthForm({
                     type="button"
                     variant="outline"
                     onClick={() => onOAuthLogin?.("github")}
-                    className="w-full"
+                    className="w-full text-gray-900 dark:text-white border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-700"
                   >
                     <Github className="mr-2 h-4 w-4" />
                     GitHub
@@ -107,15 +107,15 @@ export default function AuthForm({
               </>
             )}
 
-            <div className="mt-4 text-center text-sm">
+            <div className="mt-4 sm:mt-6 text-center text-sm text-gray-900 dark:text-white">
               {bottomLink.text}{" "}
-              <Link href={bottomLink.href} className="text-primary hover:underline font-semibold">
+              <Link href={bottomLink.href} className="text-blue-600 dark:text-blue-400 hover:underline font-semibold">
                 {bottomLink.label}
               </Link>
             </div>
             {title === "Login" && (
               <div className="mt-4 text-center text-sm">
-                <Link href="/auth/forgot-password" className="text-muted-foreground hover:text-foreground">
+                <Link href="/auth/forgot-password" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
                   Forgot password?
                 </Link>
               </div>

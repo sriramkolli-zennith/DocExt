@@ -69,15 +69,15 @@ export default function DashboardContent({ initialDocuments, initialStats }: Das
     <>
       <SessionWarningModal open={showWarning} onExtend={extendSession} />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold mb-2">Dashboard</h1>
-            <p className="text-sm sm:text-base text-muted-foreground">Overview of your document extraction activity</p>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 sm:mb-10 gap-4">
+          <div className="w-full sm:w-auto">
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-2">Dashboard</h1>
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Overview of your document extraction activity</p>
           </div>
-          <Link href="/extract">
-            <Button size="lg" className="gap-2 w-full sm:w-auto">
+          <Link href="/extract" className="w-full sm:w-auto">
+            <Button size="lg" className="gap-2 w-full sm:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700">
               <Plus className="h-5 w-5" />
               New Extraction
             </Button>
@@ -85,51 +85,51 @@ export default function DashboardContent({ initialDocuments, initialStats }: Das
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
-          <Card>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 lg:gap-6 mb-8 sm:mb-10">
+          <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:shadow-lg dark:hover:shadow-slate-900 transition">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Documents</p>
-                  <p className="text-2xl font-bold">{stats.total}</p>
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">Total Documents</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1">{stats.total}</p>
                 </div>
-                <FileText className="h-8 w-8 text-primary" />
+                <FileText className="h-8 w-8 sm:h-10 sm:w-10 text-blue-500 dark:text-blue-400 opacity-80" />
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:shadow-lg dark:hover:shadow-slate-900 transition">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Completed</p>
-                  <p className="text-2xl font-bold">{stats.completed}</p>
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">Completed</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400 mt-1">{stats.completed}</p>
                 </div>
-                <CheckCircle2 className="h-8 w-8 text-green-500" />
+                <CheckCircle2 className="h-8 w-8 sm:h-10 sm:w-10 text-green-500 dark:text-green-400 opacity-80" />
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:shadow-lg dark:hover:shadow-slate-900 transition">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Processing</p>
-                  <p className="text-2xl font-bold">{stats.processing}</p>
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">Processing</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400 mt-1">{stats.processing}</p>
                 </div>
-                <Clock className="h-8 w-8 text-blue-500" />
+                <Clock className="h-8 w-8 sm:h-10 sm:w-10 text-blue-500 dark:text-blue-400 opacity-80" />
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:shadow-lg dark:hover:shadow-slate-900 transition">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Success Rate</p>
-                  <p className="text-2xl font-bold">{stats.successRate.toFixed(0)}%</p>
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">Success Rate</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400 mt-1">{stats.successRate.toFixed(0)}%</p>
                 </div>
-                <TrendingUp className="h-8 w-8 text-purple-500" />
+                <TrendingUp className="h-8 w-8 sm:h-10 sm:w-10 text-purple-500 dark:text-purple-400 opacity-80" />
               </div>
             </CardContent>
           </Card>
@@ -137,11 +137,11 @@ export default function DashboardContent({ initialDocuments, initialStats }: Das
 
         {/* Recent Uploads */}
         <div>
-          <h2 className="text-xl font-semibold mb-4">Recent Uploads</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-6">Recent Uploads</h2>
           {recentDocs.length === 0 ? (
-            <Card>
-              <CardContent className="py-8 text-center text-muted-foreground">
-                No documents yet. Start your first extraction!
+            <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
+              <CardContent className="py-8 sm:py-12 text-center">
+                <p className="text-gray-600 dark:text-gray-400">No documents yet. Start your first extraction!</p>
               </CardContent>
             </Card>
           ) : (

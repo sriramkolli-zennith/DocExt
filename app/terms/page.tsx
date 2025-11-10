@@ -6,20 +6,20 @@ export const dynamic = "force-static"
 
 export default function TermsOfServicePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted">
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        <Link href="/" className="inline-flex items-center gap-2 text-primary hover:underline mb-8">
+    <div className="min-h-screen bg-white dark:bg-slate-900">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
+        <Link href="/" className="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline mb-8">
           <ArrowLeft className="h-4 w-4" />
           Back to Home
         </Link>
 
-        <h1 className="text-4xl font-bold mb-4">Terms of Service</h1>
-        <p className="text-muted-foreground mb-8">Last updated: November 5, 2025</p>
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 text-gray-900 dark:text-white">Terms of Service</h1>
+        <p className="text-gray-600 dark:text-gray-400 mb-8">Last updated: November 5, 2025</p>
 
-        <div className="prose prose-gray dark:prose-invert max-w-none space-y-6">
+        <div className="max-w-none space-y-6 text-gray-700 dark:text-gray-300">
           <section>
-            <h2 className="text-2xl font-semibold mb-4">Agreement to Terms</h2>
-            <p className="text-muted-foreground leading-relaxed">
+            <h2 className="text-2xl sm:text-3xl font-semibold mb-4 text-gray-900 dark:text-white">Agreement to Terms</h2>
+            <p className="leading-relaxed">
               By accessing and using DocExtract ("the Service"), you agree to be bound by these Terms of Service 
               and all applicable laws and regulations. If you do not agree with any of these terms, you are 
               prohibited from using this Service.
@@ -27,19 +27,19 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">Description of Service</h2>
-            <p className="text-muted-foreground leading-relaxed">
+            <h2 className="text-2xl sm:text-3xl font-semibold mb-4 text-gray-900 dark:text-white">Description of Service</h2>
+            <p className="leading-relaxed">
               DocExtract is a document processing platform that uses artificial intelligence to extract structured 
               data from documents. The Service is provided "as is" and "as available" without warranties of any kind.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">User Accounts</h2>
-            <p className="text-muted-foreground leading-relaxed mb-3">
+            <h2 className="text-2xl sm:text-3xl font-semibold mb-4 text-gray-900 dark:text-white">User Accounts</h2>
+            <p className="leading-relaxed mb-3">
               When you create an account with us, you agree to:
             </p>
-            <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
+            <ul className="list-disc pl-6 space-y-2">
               <li>Provide accurate, current, and complete information</li>
               <li>Maintain the security of your account credentials</li>
               <li>Notify us immediately of any unauthorized access</li>
@@ -49,11 +49,11 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">Acceptable Use</h2>
-            <p className="text-muted-foreground leading-relaxed mb-3">
+            <h2 className="text-2xl sm:text-3xl font-semibold mb-4 text-gray-900 dark:text-white">Acceptable Use</h2>
+            <p className="leading-relaxed mb-3">
               You agree not to use the Service to:
             </p>
-            <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
+            <ul className="list-disc pl-6 space-y-2">
               <li>Upload illegal, harmful, or offensive content</li>
               <li>Violate any applicable laws or regulations</li>
               <li>Infringe on intellectual property rights</li>
@@ -66,8 +66,8 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">Intellectual Property</h2>
-            <p className="text-muted-foreground leading-relaxed">
+            <h2 className="text-2xl sm:text-3xl font-semibold mb-4 text-gray-900 dark:text-white">Intellectual Property</h2>
+            <p className="leading-relaxed">
               The Service, including its original content, features, and functionality, is owned by DocExtract and 
               is protected by international copyright, trademark, and other intellectual property laws. You retain 
               all rights to the documents you upload and the data extracted from them.
@@ -75,8 +75,8 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">User Content</h2>
-            <p className="text-muted-foreground leading-relaxed mb-3">
+            <h2 className="text-2xl sm:text-3xl font-semibold mb-4 text-gray-900 dark:text-white">User Content</h2>
+            <p className="leading-relaxed mb-3">
               By uploading documents to our Service:
             </p>
             <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
@@ -157,8 +157,8 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">Changes to Terms</h2>
-            <p className="text-muted-foreground leading-relaxed">
+            <h2 className="text-2xl sm:text-3xl font-semibold mb-4 text-gray-900 dark:text-white">Changes to Terms</h2>
+            <p className="leading-relaxed">
               We reserve the right to modify these Terms at any time. We will notify users of any material changes 
               by posting the new Terms on this page and updating the "Last updated" date. Your continued use of the 
               Service after changes constitutes acceptance of the new Terms.
@@ -166,19 +166,19 @@ export default function TermsOfServicePage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">Contact Information</h2>
-            <p className="text-muted-foreground leading-relaxed">
+            <h2 className="text-2xl sm:text-3xl font-semibold mb-4 text-gray-900 dark:text-white">Contact Information</h2>
+            <p className="leading-relaxed">
               If you have any questions about these Terms of Service, please contact us at:
             </p>
-            <p className="text-muted-foreground leading-relaxed mt-2">
+            <p className="leading-relaxed mt-2">
               Email: legal@docextract.com
             </p>
           </section>
         </div>
 
-        <div className="mt-12 pt-8 border-t">
+        <div className="mt-12 pt-8 border-t border-gray-200 dark:border-slate-700">
           <Link href="/">
-            <Button variant="outline">
+            <Button variant="outline" className="text-gray-900 dark:text-white border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-700">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Home
             </Button>

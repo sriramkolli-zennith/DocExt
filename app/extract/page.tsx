@@ -181,6 +181,8 @@ export default function ExtractPage() {
     setError(null)
 
     try {
+      let lastDocumentId: string | null = null
+
       // Process each file
       for (const file of files) {
         // Step 1: Upload document via edge function
@@ -201,9 +203,19 @@ export default function ExtractPage() {
         if (processError) {
           throw new Error(processError)
         }
+
+        // Capture the document ID from response
+        if (processData && processData.documentId) {
+          lastDocumentId = processData.documentId
+        }
       }
 
-      router.push("/documents")
+      // Redirect to the document detail page with the ID
+      if (lastDocumentId) {
+        router.push(`/documents/${lastDocumentId}`)
+      } else {
+        router.push("/documents")
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to extract documents")
       setIsLoading(false)
@@ -211,21 +223,21 @@ export default function ExtractPage() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-b from-background to-muted">
+    <div className="min-h-screen bg-white dark:bg-slate-900 text-gray-900 dark:text-white">
       <Navbar />
       <SessionWarningModal open={showWarning} onExtend={extendSession} />
 
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
         {step === "name" && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">New Extraction</CardTitle>
-              <CardDescription>Step 1: Give your extraction a name</CardDescription>
+          <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 shadow-lg">
+            <CardHeader className="border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
+              <CardTitle className="text-2xl sm:text-3xl font-bold">New Extraction</CardTitle>
+              <CardDescription className="text-gray-600 dark:text-gray-400">Step 1: Give your extraction a name</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               <form onSubmit={handleNameSubmit} className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="documentName">Extraction Name</Label>
+                  <Label htmlFor="documentName" className="text-gray-700 dark:text-gray-300 font-semibold">Extraction Name</Label>
                   <Input
                     id="documentName"
                     type="text"
@@ -233,11 +245,12 @@ export default function ExtractPage() {
                     value={documentName}
                     onChange={(e) => setDocumentName(e.target.value)}
                     autoFocus
+                    className="bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   />
-                  <p className="text-sm text-muted-foreground">Give this extraction a descriptive name</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Give this extraction a descriptive name</p>
                 </div>
-                {error && <p className="text-sm text-destructive">{error}</p>}
-                <Button type="submit" size="lg" className="w-full">
+                {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+                <Button type="submit" size="lg" className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white">
                   Continue
                 </Button>
               </form>
@@ -246,12 +259,12 @@ export default function ExtractPage() {
         )}
 
         {step === "upload" && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">Upload Documents</CardTitle>
-              <CardDescription>Step 2: Upload the documents you want to extract data from</CardDescription>
+          <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 shadow-lg">
+            <CardHeader className="border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
+              <CardTitle className="text-2xl sm:text-3xl font-bold">Upload Documents</CardTitle>
+              <CardDescription className="text-gray-600 dark:text-gray-400">Step 2: Upload the documents you want to extract data from</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               <form onSubmit={handleUploadSubmit} className="space-y-6">
                 <div
                   onDragOver={handleDragOver}
@@ -259,7 +272,7 @@ export default function ExtractPage() {
                   onDrop={handleDrop}
                   onClick={() => fileInputRef.current?.click()}
                   className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition ${
-                    isDragActive ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                    isDragActive ? "border-blue-500 bg-blue-50 dark:bg-blue-950" : "border-gray-300 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-500"
                   }`}
                 >
                   <input
@@ -270,27 +283,27 @@ export default function ExtractPage() {
                     onChange={handleFileInputChange}
                     className="hidden"
                   />
-                  <Upload className="h-10 w-10 mx-auto mb-2 text-muted-foreground" />
-                  <p className="font-semibold mb-1">Drag files here or click to select</p>
-                  <p className="text-sm text-muted-foreground">
+                  <Upload className="h-10 w-10 mx-auto mb-2 text-gray-400 dark:text-gray-500" />
+                  <p className="font-semibold mb-1 text-gray-900 dark:text-white">Drag files here or click to select</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Supported formats: PDF, PNG, JPG, TIFF (Max 50MB each)
                   </p>
                 </div>
 
                 {files.length > 0 && (
                   <div className="space-y-3">
-                    <p className="font-semibold text-sm">Uploaded Files ({files.length}):</p>
+                    <p className="font-semibold text-sm text-gray-900 dark:text-white">Uploaded Files ({files.length}):</p>
                     <div className="grid gap-3">
                       {files.map((file, idx) => (
-                        <Card key={idx} className="relative">
+                        <Card key={idx} className="relative bg-gray-50 dark:bg-slate-700 border-gray-200 dark:border-slate-600">
                           <CardContent className="p-4">
                             <div className="flex items-center gap-3">
                               <div className="shrink-0">
-                                <FileText className="h-8 w-8 text-primary" />
+                                <FileText className="h-8 w-8 text-blue-600 dark:text-blue-400" />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="font-medium truncate">{file.name}</p>
-                                <p className="text-sm text-muted-foreground">
+                                <p className="font-medium truncate text-gray-900 dark:text-white">{file.name}</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
                                   {(file.size / 1024 / 1024).toFixed(2)} MB
                                 </p>
                               </div>
@@ -302,7 +315,7 @@ export default function ExtractPage() {
                                   e.stopPropagation()
                                   removeFile(idx)
                                 }}
-                                className="shrink-0"
+                                className="shrink-0 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-slate-600"
                               >
                                 <X className="h-4 w-4" />
                               </Button>
@@ -314,13 +327,13 @@ export default function ExtractPage() {
                   </div>
                 )}
 
-                {error && <p className="text-sm text-destructive">{error}</p>}
+                {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
                 <div className="flex gap-3">
-                  <Button type="button" variant="outline" onClick={() => setStep("name")} className="flex-1">
+                  <Button type="button" variant="outline" onClick={() => setStep("name")} className="flex-1 text-gray-900 dark:text-white border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-700">
                     Back
                   </Button>
-                  <Button type="submit" size="lg" className="flex-1">
+                  <Button type="submit" size="lg" className="flex-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white">
                     Continue
                   </Button>
                 </div>
@@ -330,19 +343,19 @@ export default function ExtractPage() {
         )}
 
         {step === "fields" && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">Extract Fields</CardTitle>
-              <CardDescription>Step 3: Specify which fields you want to extract from the documents</CardDescription>
+          <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 shadow-lg">
+            <CardHeader className="border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
+              <CardTitle className="text-2xl sm:text-3xl font-bold">Extract Fields</CardTitle>
+              <CardDescription className="text-gray-600 dark:text-gray-400">Step 3: Specify which fields you want to extract from the documents</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               <div className="space-y-6">
                 {/* Common Field Suggestions */}
                 <div className="space-y-3">
                   <button
                     type="button"
                     onClick={() => setShowSuggestions(!showSuggestions)}
-                    className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors w-full"
+                    className="flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors w-full"
                   >
                     <Sparkles className="h-4 w-4" />
                     <span>Common Invoice Fields</span>
@@ -350,7 +363,7 @@ export default function ExtractPage() {
                   </button>
                   
                   {showSuggestions && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3">
                       {COMMON_INVOICE_FIELDS.map((suggestion) => {
                         const isAdded = fields.some(f => f.name === suggestion.name)
                         return (
@@ -359,28 +372,28 @@ export default function ExtractPage() {
                             type="button"
                             onClick={() => !isAdded && addSuggestedField(suggestion)}
                             disabled={isAdded}
-                            className={`p-3 rounded-lg border text-left transition-all ${
+                            className={`p-3 rounded-lg border text-left transition-all text-sm sm:text-base ${
                               isAdded 
-                                ? 'bg-muted/50 border-muted cursor-not-allowed opacity-60' 
-                                : 'bg-background hover:bg-muted/50 hover:border-primary cursor-pointer'
+                                ? 'bg-gray-100 dark:bg-slate-700 border-gray-300 dark:border-slate-600 cursor-not-allowed opacity-60' 
+                                : 'bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600 hover:bg-blue-50 dark:hover:bg-slate-600 hover:border-blue-400 dark:hover:border-blue-500 cursor-pointer'
                             }`}
                           >
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-sm font-medium">{suggestion.name}</span>
+                                  <span className="text-sm font-medium text-gray-900 dark:text-white">{suggestion.name}</span>
                                   <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                    suggestion.type === 'currency' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                                    suggestion.type === 'date' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
-                                    suggestion.type === 'number' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                                    'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
+                                    suggestion.type === 'currency' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' :
+                                    suggestion.type === 'date' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' :
+                                    suggestion.type === 'number' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' :
+                                    'bg-gray-100 text-gray-700 dark:bg-gray-900/40 dark:text-gray-300'
                                   }`}>
                                     {suggestion.type}
                                   </span>
                                 </div>
-                                <p className="text-xs text-muted-foreground mt-1">{suggestion.description}</p>
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{suggestion.description}</p>
                               </div>
-                              {isAdded && <Plus className="h-4 w-4 text-muted-foreground rotate-45" />}
+                              {isAdded && <Plus className="h-4 w-4 text-gray-400 dark:text-gray-500 rotate-45" />}
                             </div>
                           </button>
                         )
@@ -391,8 +404,8 @@ export default function ExtractPage() {
 
                 {/* Add Custom Field */}
                 <div className="space-y-3">
-                  <p className="font-semibold text-sm sm:text-base">Add Custom Field:</p>
-                  <div className="flex flex-col sm:flex-row gap-2">
+                  <p className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white">Add Custom Field:</p>
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                     <Input
                       placeholder="e.g., InvoiceTotal, CustomerName"
                       value={newField}
@@ -403,12 +416,12 @@ export default function ExtractPage() {
                           addField()
                         }
                       }}
-                      className="flex-1 text-sm"
+                      className="flex-1 text-sm bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                     />
                     <select
                       value={newFieldType}
                       onChange={(e) => setNewFieldType(e.target.value)}
-                      className="px-3 py-2 rounded-md border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:focus:ring-slate-600"
+                      className="px-3 py-2 rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600"
                     >
                       {FIELD_TYPES.map(type => (
                         <option key={type.value} value={type.value}>
@@ -416,7 +429,7 @@ export default function ExtractPage() {
                         </option>
                       ))}
                     </select>
-                    <Button type="button" variant="outline" onClick={() => addField()} className="gap-2 w-full sm:w-auto">
+                    <Button type="button" variant="outline" onClick={() => addField()} className="gap-2 w-full sm:w-auto text-gray-900 dark:text-white border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-700">
                       <Plus className="h-4 w-4" />
                       Add
                     </Button>
@@ -425,25 +438,25 @@ export default function ExtractPage() {
 
                 {fields.length > 0 && (
                   <div className="space-y-2">
-                    <p className="font-semibold">Fields to Extract ({fields.length}):</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">Fields to Extract ({fields.length}):</p>
                     <div className="space-y-2">
                       {fields.map((field) => (
-                        <div key={field.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">{field.name}</span>
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${
-                              field.type === 'currency' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                              field.type === 'date' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
-                              field.type === 'number' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                              field.type === 'email' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
-                              field.type === 'phone' ? 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400' :
-                              field.type === 'boolean' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' :
-                              'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'
+                        <div key={field.id} className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 dark:bg-slate-700 rounded-lg border border-gray-200 dark:border-slate-600">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-sm font-medium text-gray-900 dark:text-white truncate">{field.name}</span>
+                            <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
+                              field.type === 'currency' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' :
+                              field.type === 'date' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' :
+                              field.type === 'number' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' :
+                              field.type === 'email' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300' :
+                              field.type === 'phone' ? 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300' :
+                              field.type === 'boolean' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' :
+                              'bg-gray-100 text-gray-700 dark:bg-gray-900/40 dark:text-gray-300'
                             }`}>
                               {field.type}
                             </span>
                           </div>
-                          <Button variant="ghost" size="sm" onClick={() => removeField(field.id)}>
+                          <Button variant="ghost" size="sm" onClick={() => removeField(field.id)} className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-slate-600 flex-shrink-0">
                             <X className="h-4 w-4" />
                           </Button>
                         </div>
@@ -452,10 +465,10 @@ export default function ExtractPage() {
                   </div>
                 )}
 
-                {error && <p className="text-sm text-destructive">{error}</p>}
+                {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
                 <div className="flex gap-3">
-                  <Button type="button" variant="outline" onClick={() => setStep("upload")} className="flex-1">
+                  <Button type="button" variant="outline" onClick={() => setStep("upload")} className="flex-1 text-gray-900 dark:text-white border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-700">
                     Back
                   </Button>
                   <Button
@@ -463,7 +476,7 @@ export default function ExtractPage() {
                     onClick={handleExtraction}
                     disabled={isLoading}
                     size="lg"
-                    className="flex-1 gap-2"
+                    className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white disabled:opacity-60"
                   >
                     {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                     {isLoading ? "Extracting..." : "Start Extraction"}
