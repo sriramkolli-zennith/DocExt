@@ -1,9 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, AlertCircle } from "lucide-react"
+import { X, AlertCircle, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 
 interface PDFViewerSidebarProps {
   isOpen: boolean
@@ -24,8 +23,7 @@ export function PDFViewerSidebar({
 }: PDFViewerSidebarProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [pdfError, setPdfError] = useState(false)
-  const [iframeRef, setIframeRef] = useState<HTMLIFrameElement | null>(null)
-  const [highlightAttempt, setHighlightAttempt] = useState(0)
+  const [searchQuery, setSearchQuery] = useState(fieldValue)
 
   // Handle escape key to close
   useEffect(() => {
@@ -38,50 +36,10 @@ export function PDFViewerSidebar({
     }
   }, [isOpen, onClose])
 
-  // Highlight field and value in PDF using PDF viewer's built-in search
+  // Update search query when field value changes
   useEffect(() => {
-    if (iframeRef && isOpen && !isLoading && !pdfError && fieldValue) {
-      try {
-        // Use PDF viewer's built-in search and highlight functionality
-        const searchTerm = fieldValue.trim()
-        if (searchTerm.length > 0) {
-          // Trigger search in the PDF viewer with the field value
-          const iframeWindow = iframeRef.contentWindow
-          if (iframeWindow) {
-            try {
-              // Send message to PDF viewer to search
-              iframeWindow.postMessage(
-                {
-                  type: "SEARCH_PDF",
-                  query: searchTerm,
-                },
-                "*"
-              )
-            } catch (e) {
-              console.log("PDF search message failed:", e)
-            }
-
-            // Alternative: Try to access PDFViewerApplication if available
-            if ((iframeWindow as any).PDFViewerApplication) {
-              try {
-                const app = (iframeWindow as any).PDFViewerApplication
-                if (app.pdfViewer && app.pdfViewer.pdfDocument) {
-                  // Highlight by searching
-                  if (app.find && typeof app.find === "function") {
-                    app.find(searchTerm)
-                  }
-                }
-              } catch (e) {
-                console.log("PDF search via app failed:", e)
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.log("PDF highlighting attempt:", error)
-      }
-    }
-  }, [iframeRef, isOpen, isLoading, pdfError, fieldValue, highlightAttempt])
+    setSearchQuery(fieldValue)
+  }, [fieldValue])
 
   return (
     <>
@@ -104,11 +62,6 @@ export function PDFViewerSidebar({
           <div className="flex-1 min-w-0 pr-4">
             <h3 className="font-bold text-base sm:text-lg truncate text-gray-900 dark:text-white">{fieldName}</h3>
             <p className="text-xs text-gray-600 dark:text-gray-400 truncate mt-1">{fieldValue}</p>
-            {confidence !== undefined && (
-              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                Confidence: {(confidence * 100).toFixed(1)}%
-              </p>
-            )}
           </div>
           <Button
             variant="ghost"
@@ -121,17 +74,17 @@ export function PDFViewerSidebar({
           </Button>
         </div>
 
-        {/* Close Button Bar */}
-        <div className="border-b border-gray-300 dark:border-slate-700 px-4 sm:px-6 py-3 flex items-center justify-end gap-2 bg-gray-50 dark:bg-slate-800 sticky top-[72px] z-40 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onClose}
-            className="text-xs h-8 gap-2 border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 dark:hover:text-red-400"
-          >
-            <X className="h-4 w-4" />
-            Close Tab
-          </Button>
+        {/* Search Bar */}
+        <div className="border-b border-gray-300 dark:border-slate-700 px-4 sm:px-6 py-3 flex items-center gap-2 bg-gray-50 dark:bg-slate-800 sticky top-[72px] z-40 shrink-0">
+          <Search className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search in PDF..."
+            className="flex-1 px-3 py-2 text-sm bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+          />
+          <p className="text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap font-medium">Ctrl+F</p>
         </div>
 
         {/* PDF Viewer Section */}
@@ -176,8 +129,7 @@ export function PDFViewerSidebar({
           <div className="w-full h-full p-2 sm:p-4 flex items-center justify-center">
             {pdfUrl ? (
               <iframe
-                ref={(ref) => setIframeRef(ref)}
-                src={`${pdfUrl}#toolbar=1&navpanes=0&scrollbar=1&view=FitH`}
+                src={`${pdfUrl}#toolbar=1&navpanes=0&scrollbar=1`}
                 className="w-full h-full rounded-lg border border-gray-300 dark:border-slate-700 shadow-lg"
                 onLoad={() => setIsLoading(false)}
                 onError={() => {
@@ -204,8 +156,12 @@ export function PDFViewerSidebar({
           </div>
           <div className="space-y-1">
             <p className="font-semibold text-gray-900 dark:text-white text-sm">Extracted Value</p>
-            <p className="text-gray-600 dark:text-gray-400 break-words line-clamp-3 bg-yellow-50 dark:bg-yellow-950/30 border-l-4 border-yellow-400 dark:border-yellow-600 pl-3 py-2 rounded">{fieldValue}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-500 italic mt-2">💡 Use Ctrl+F to search and highlight in PDF</p>
+            <p className="text-gray-600 dark:text-gray-400 break-words line-clamp-3 bg-yellow-50 dark:bg-yellow-950/30 border-l-4 border-yellow-400 dark:border-yellow-600 pl-3 py-2 rounded">
+              {fieldValue}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-500 italic mt-2">
+              💡 Use search bar above or press <kbd className="bg-gray-200 dark:bg-slate-700 px-2 py-1 rounded text-xs">Ctrl+F</kbd> to highlight
+            </p>
           </div>
           {confidence !== undefined && (
             <div className="space-y-2 pt-2 border-t border-gray-300 dark:border-slate-700">
