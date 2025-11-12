@@ -456,8 +456,15 @@ export default function DocumentDetailPage() {
                     key={field.id} 
                     className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:shadow-md dark:hover:shadow-lg transition cursor-pointer" 
                     onMouseEnter={() => {
-                      setSelectedFieldForPDF(field)
-                      setPdfSidebarOpen(true)
+                      // Only show sidebar on desktop (lg and up)
+                      if (window.innerWidth >= 1024) {
+                        setSelectedFieldForPDF(field)
+                        setPdfSidebarOpen(true)
+                      }
+                    }}
+                    onMouseLeave={() => {
+                      // Close sidebar when mouse leaves the card
+                      setPdfSidebarOpen(false)
                     }}
                     onClick={() => {
                       setSelectedFieldForPDF(field)
@@ -502,7 +509,8 @@ export default function DocumentDetailPage() {
                             title="View in PDF"
                           >
                             <Eye className="h-4 w-4" />
-                            View PDF
+                            <span className="hidden sm:inline">View PDF</span>
+                            <span className="sm:hidden">View</span>
                           </Button>
                           <Button
                             variant="ghost"
@@ -512,7 +520,7 @@ export default function DocumentDetailPage() {
                               setSelectedField(field)
                               setIsModalOpen(true)
                             }}
-                            className="gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-slate-700"
+                            className="hidden sm:flex gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-slate-700"
                             title="Edit value"
                           >
                             Edit
@@ -524,7 +532,7 @@ export default function DocumentDetailPage() {
                               e.stopPropagation()
                               handleDeleteField(field.fieldId)
                             }}
-                            className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950"
+                            className="hidden sm:flex text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950"
                             title="Delete field"
                           >
                             <Trash2 className="h-4 w-4" />

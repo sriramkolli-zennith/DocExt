@@ -130,7 +130,7 @@ Deno.serve(async (req) => {
 
     const azureEndpoint = Deno.env.get("AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT")
     const azureKey = Deno.env.get("AZURE_DOCUMENT_INTELLIGENCE_API_KEY")
-    const modelId = "prebuilt-document"
+    const modelId = "prebuilt-invoice"
 
     console.log("🔧 Azure Configuration:")
     console.log("  - Endpoint:", azureEndpoint ? "✅ Set" : "❌ Missing")
