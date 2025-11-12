@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from "react"
 import { X, AlertCircle, ZoomIn, ZoomOut, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Document, Page, pdfjs } from 'react-pdf'
+import { Document, Page, pdfjs } from "react-pdf"
+import type { PDFPageProxy } from "pdfjs-dist/types/src/display/api"
 
 // Set up PDF.js worker
 if (typeof window !== 'undefined') {
@@ -21,6 +22,27 @@ interface PDFViewerSidebarProps {
   boundingBox?: number[]
 }
 
+const normalizeForSearch = (input: string) =>
+  input
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim()
+
+const shouldSkipMatchCounting = (value: string) => {
+  const normalized = value.toLowerCase().trim()
+  if (!normalized || normalized.length < 2) return true
+
+  const discouragedValues = [
+    "processing...",
+    "processing",
+    "not extracted",
+    "extraction failed",
+    "n/a",
+  ]
+
+  return discouragedValues.includes(normalized)
+}
+
 export function PDFViewerSidebar({
   isOpen,
   onClose,
@@ -36,9 +58,13 @@ export function PDFViewerSidebar({
   const [scale, setScale] = useState<number>(1.0)
   const [pdfError, setPdfError] = useState(false)
   const [pdfLoading, setPdfLoading] = useState(true)
+  const [matchCount, setMatchCount] = useState<number | null>(null)
+  const [isCountingMatches, setIsCountingMatches] = useState(false)
   const canvasRefs = useRef<Map<number, HTMLCanvasElement>>(new Map())
   const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map())
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const pageDimensionsRef = useRef<Map<number, { width: number; height: number }>>(new Map())
+  const latestBoundingBoxRef = useRef<number[] | undefined>(undefined)
 
   // Handle escape key to close
   useEffect(() => {
@@ -62,103 +88,299 @@ export function PDFViewerSidebar({
     }
   }, [isOpen, pageNumber])
 
+  useEffect(() => {
+    pageDimensionsRef.current.clear()
+    canvasRefs.current.forEach((canvas) => {
+      const ctx = canvas.getContext("2d")
+      ctx?.clearRect(0, 0, canvas.width, canvas.height)
+    })
+    setNumPages(0)
+    setCurrentPage(pageNumber && pageNumber > 0 ? pageNumber : 1)
+    setPdfLoading(true)
+    setPdfError(false)
+  }, [pdfUrl])
+
   // Draw annotation when bounding box and page are available
   useEffect(() => {
-    if (boundingBox && pageNumber && isOpen && !pdfLoading) {
-      setTimeout(() => {
+    if (boundingBox && pageNumber && isOpen && !pdfLoading && !pdfError) {
+      latestBoundingBoxRef.current = boundingBox
+      clearAllCanvases()
+      const redrawTimeout = setTimeout(() => {
         drawAnnotation(pageNumber, boundingBox)
-      }, 900)
+      }, 250)
+
+      return () => clearTimeout(redrawTimeout)
     }
-  }, [boundingBox, pageNumber, isOpen, pdfLoading, scale])
+    if (!boundingBox) {
+      clearAllCanvases()
+    }
+  }, [boundingBox, pageNumber, isOpen, pdfLoading, pdfError, scale])
+
+  useEffect(() => {
+    latestBoundingBoxRef.current = boundingBox
+  }, [boundingBox])
+
+  useEffect(() => {
+    if (!isOpen) {
+      clearAllCanvases()
+    }
+  }, [isOpen])
+
+  useEffect(() => {
+    if (!isOpen || !pageNumber) return
+
+    const handleResize = () => {
+      if (latestBoundingBoxRef.current) {
+        drawAnnotation(pageNumber, latestBoundingBoxRef.current)
+      }
+    }
+
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [isOpen, pageNumber])
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    const container = scrollContainerRef.current
+    if (!container || numPages === 0) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibleEntries = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+
+        if (visibleEntries.length === 0) return
+
+        const target = visibleEntries[0].target as HTMLDivElement
+        const pageAttr = target.getAttribute("data-page-number")
+        const pageIndex = pageAttr ? Number(pageAttr) : NaN
+
+        if (!Number.isNaN(pageIndex)) {
+          setCurrentPage(pageIndex)
+        }
+      },
+      { root: container, threshold: 0.4 }
+    )
+
+    pageRefs.current.forEach((element) => {
+      observer.observe(element)
+    })
+
+    return () => observer.disconnect()
+  }, [isOpen, numPages])
+
+  useEffect(() => {
+    if (!isOpen || !pdfUrl || !fieldValue) {
+      setMatchCount(null)
+      setIsCountingMatches(false)
+      return
+    }
+
+    if (pdfLoading || pdfError || numPages === 0) {
+      setMatchCount(null)
+      setIsCountingMatches(false)
+      return
+    }
+
+    if (shouldSkipMatchCounting(fieldValue)) {
+      setMatchCount(null)
+      setIsCountingMatches(false)
+      return
+    }
+
+    const normalizedTerm = normalizeForSearch(fieldValue)
+    if (!normalizedTerm) {
+      setMatchCount(null)
+      setIsCountingMatches(false)
+      return
+    }
+
+    let cancelled = false
+    let loadingTask: ReturnType<typeof pdfjs.getDocument> | null = null
+
+    const countMatches = async () => {
+      try {
+        setIsCountingMatches(true)
+        setMatchCount(null)
+
+        loadingTask = pdfjs.getDocument({ url: pdfUrl })
+        const pdfDocument = await loadingTask.promise
+        loadingTask = null
+
+        let totalMatches = 0
+
+        for (let pageIndex = 1; pageIndex <= pdfDocument.numPages; pageIndex++) {
+          if (cancelled) break
+
+          const page = await pdfDocument.getPage(pageIndex)
+          const textContent = await page.getTextContent()
+
+          const combinedText = (textContent.items as Array<Record<string, unknown>>)
+            .map((item) => {
+              if (typeof item?.str === "string") return item.str as string
+              if (typeof item?.text === "string") return item.text as string
+              return ""
+            })
+            .join(" ")
+
+          const normalizedText = normalizeForSearch(combinedText)
+          if (!normalizedText) continue
+
+          let fromIndex = normalizedText.indexOf(normalizedTerm)
+          while (fromIndex !== -1) {
+            totalMatches += 1
+            fromIndex = normalizedText.indexOf(normalizedTerm, fromIndex + normalizedTerm.length)
+          }
+        }
+
+        if (!cancelled) {
+          setMatchCount(totalMatches)
+        }
+
+        await pdfDocument.destroy()
+      } catch (error) {
+        console.error("Match counting failed:", error)
+        if (!cancelled) {
+          setMatchCount(null)
+        }
+      } finally {
+        if (!cancelled) {
+          setIsCountingMatches(false)
+        }
+        if (loadingTask) {
+          loadingTask.destroy()
+        }
+      }
+    }
+
+    countMatches()
+
+    return () => {
+      cancelled = true
+      if (loadingTask) {
+        loadingTask.destroy()
+      }
+    }
+  }, [isOpen, pdfUrl, fieldValue, pdfLoading, pdfError, numPages])
 
   const scrollToPage = (page: number) => {
     const pageElement = pageRefs.current.get(page)
     if (pageElement && scrollContainerRef.current) {
-      pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      pageElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
   }
 
-  const drawAnnotation = (page: number, bbox: number[]) => {
-    const canvas = canvasRefs.current.get(page)
-    if (!canvas || bbox.length < 8) return
+  const clearAllCanvases = () => {
+    canvasRefs.current.forEach((canvas) => {
+      const ctx = canvas.getContext("2d")
+      if (!ctx) return
+      ctx.setTransform(1, 0, 0, 1, 0, 0)
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+    })
+  }
 
-    const ctx = canvas.getContext('2d')
+  const drawAnnotation = (page: number, bbox: number[]) => {
+    if (!Array.isArray(bbox) || bbox.length < 8) return
+
+    const canvas = canvasRefs.current.get(page)
+    const pageElement = pageRefs.current.get(page)
+    const pageDimensions = pageDimensionsRef.current.get(page)
+
+    if (!canvas || !pageElement || !pageDimensions) return
+
+    const width = pageElement.clientWidth
+    const height = pageElement.clientHeight
+
+    if (!width || !height) return
+
+    const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1
+
+    const requiredWidth = width * dpr
+    const requiredHeight = height * dpr
+
+    if (canvas.width !== requiredWidth || canvas.height !== requiredHeight) {
+      canvas.width = requiredWidth
+      canvas.height = requiredHeight
+    }
+
+    if (canvas.style.width !== `${width}px`) {
+      canvas.style.width = `${width}px`
+      canvas.style.height = `${height}px`
+    }
+
+    const ctx = canvas.getContext("2d")
     if (!ctx) return
 
-    // Clear previous annotations
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
     ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.scale(dpr, dpr)
 
-    // Azure polygon format: [x1, y1, x2, y2, x3, y3, x4, y4]
-    // Coordinates are in PDF space (72 DPI, origin at bottom-left)
-    // We need to convert to canvas space (origin at top-left)
-    
-    const pageElement = pageRefs.current.get(page)
-    if (!pageElement) return
+    const scaleX = width / pageDimensions.width
+    const scaleY = height / pageDimensions.height
 
-    const pageHeight = pageElement.clientHeight
-    const pageWidth = pageElement.clientWidth
+    const points: Array<{ x: number; y: number }> = []
+    let outOfBounds = 0
 
-    // Get the PDF page dimensions from the data attributes or calculate
-    // For now, assume standard US Letter size (612x792 points)
-    const pdfWidth = 612
-    const pdfHeight = 792
-
-    // Scale factors
-    const scaleX = pageWidth / pdfWidth
-    const scaleY = pageHeight / pdfHeight
-
-    // Convert bounding box coordinates
-    const convertedCoords = []
     for (let i = 0; i < bbox.length; i += 2) {
       const x = bbox[i] * scaleX
-      // Flip Y coordinate (PDF origin is bottom-left, canvas is top-left)
-      const y = pageHeight - (bbox[i + 1] * scaleY)
-      convertedCoords.push({ x, y })
+      const y = bbox[i + 1] * scaleY
+
+      if (y < -1 || y > height + 1) {
+        outOfBounds += 1
+      }
+
+      points.push({ x, y })
     }
 
-    // Draw the bounding box
-    ctx.beginPath()
-    ctx.moveTo(convertedCoords[0].x, convertedCoords[0].y)
-    for (let i = 1; i < convertedCoords.length; i++) {
-      ctx.lineTo(convertedCoords[i].x, convertedCoords[i].y)
+    if (outOfBounds >= points.length / 2) {
+      points.length = 0
+      for (let i = 0; i < bbox.length; i += 2) {
+        const x = bbox[i] * scaleX
+        const flippedY = height - bbox[i + 1] * scaleY
+        points.push({ x, y: flippedY })
+      }
     }
+
+    if (points.length === 0) return
+
+    ctx.beginPath()
+    points.forEach((point, index) => {
+      if (index === 0) ctx.moveTo(point.x, point.y)
+      else ctx.lineTo(point.x, point.y)
+    })
     ctx.closePath()
 
-    // Set style to red
-    ctx.strokeStyle = 'rgba(239, 68, 68, 0.9)' // red
-    ctx.fillStyle = 'rgba(239, 68, 68, 0.2)'
-    
-    ctx.lineWidth = 3
+    let stroke = "rgba(59, 130, 246, 0.85)"
+    let fill = "rgba(59, 130, 246, 0.18)"
+
+    if (confidence && confidence > 0.8) {
+      stroke = "rgba(34, 197, 94, 0.9)"
+      fill = "rgba(34, 197, 94, 0.22)"
+    } else if (confidence && confidence > 0.6) {
+      stroke = "rgba(234, 179, 8, 0.9)"
+      fill = "rgba(234, 179, 8, 0.22)"
+    }
+
+    ctx.lineWidth = 2.5
+    ctx.lineJoin = "round"
+    ctx.strokeStyle = stroke
+    ctx.fillStyle = fill
     ctx.fill()
     ctx.stroke()
-
-    // Add flash animation
-    let opacity = 0.8
-    let fadeOut = false
-    const animate = () => {
-      if (fadeOut) {
-        opacity -= 0.02
-        if (opacity <= 0.15) opacity = 0.15
-      } else {
-        opacity += 0.02
-        if (opacity >= 0.8) fadeOut = true
-      }
-      
-      drawAnnotation(page, bbox)
-      
-      if (opacity > 0.15 || !fadeOut) {
-        requestAnimationFrame(animate)
-      }
-    }
-    
-    // Start animation once
-    setTimeout(() => animate(), 100)
   }
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages)
     setPdfLoading(false)
     setPdfError(false)
+
+     if (pageNumber && pageNumber > 0) {
+      const targetPage = Math.min(pageNumber, numPages)
+      setCurrentPage(targetPage)
+      requestAnimationFrame(() => scrollToPage(targetPage))
+    }
   }
 
   const onDocumentLoadError = (error: Error) => {
@@ -188,6 +410,19 @@ export function PDFViewerSidebar({
     if (confidence > 0.6) return "Medium"
     return "Low"
   }
+
+  const matchBadgeText = isCountingMatches
+    ? "Scanning..."
+    : matchCount === null
+      ? "Matches --"
+      : `Matches ${matchCount}`
+
+  const matchBadgeClass = (() => {
+    if (isCountingMatches) return "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+    if (matchCount === null) return "bg-gray-100 text-gray-600 dark:bg-slate-800/60 dark:text-gray-300"
+    if (matchCount === 0) return "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+    return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+  })()
 
   return (
     <>
@@ -254,6 +489,9 @@ export function PDFViewerSidebar({
             <span className="text-sm text-gray-700 dark:text-gray-300">
               Page {currentPage} of {numPages}
             </span>
+            <span className={`text-xs font-semibold px-2 py-1 rounded transition-colors ${matchBadgeClass}`}>
+              {matchBadgeText}
+            </span>
           </div>
         </div>
 
@@ -314,9 +552,14 @@ export function PDFViewerSidebar({
                       key={`page_${page}`}
                       ref={(el) => {
                         if (el) pageRefs.current.set(page, el)
+                        else {
+                          pageRefs.current.delete(page)
+                          pageDimensionsRef.current.delete(page)
+                        }
                       }}
                       className="relative mb-4"
                       id={`pdf-page-${page}`}
+                      data-page-number={page}
                     >
                       <Page
                         pageNumber={page}
@@ -324,15 +567,23 @@ export function PDFViewerSidebar({
                         renderTextLayer={false}
                         renderAnnotationLayer={false}
                         className="shadow-lg border border-gray-300 dark:border-slate-700"
-                        onLoadSuccess={() => {
-                          if (page === pageNumber && boundingBox) {
-                            setTimeout(() => drawAnnotation(page, boundingBox), 200)
+                        onLoadSuccess={(pageArg: any) => {
+                          const loadedPage = pageArg as PDFPageProxy
+                          const viewport = loadedPage.getViewport({ scale: 1 })
+                          pageDimensionsRef.current.set(page, {
+                            width: viewport.width,
+                            height: viewport.height,
+                          })
+
+                          if (page === pageNumber && latestBoundingBoxRef.current) {
+                            requestAnimationFrame(() => drawAnnotation(page, latestBoundingBoxRef.current!))
                           }
                         }}
                       />
                       <canvas
                         ref={(el) => {
                           if (el) canvasRefs.current.set(page, el)
+                          else canvasRefs.current.delete(page)
                         }}
                         className="absolute top-0 left-0 pointer-events-none"
                         style={{
