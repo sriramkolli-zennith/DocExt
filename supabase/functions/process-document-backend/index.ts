@@ -130,7 +130,7 @@ Deno.serve(async (req) => {
 
     const azureEndpoint = Deno.env.get("AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT")
     const azureKey = Deno.env.get("AZURE_DOCUMENT_INTELLIGENCE_API_KEY")
-    const modelId = Deno.env.get("AZURE_DOCUMENT_INTELLIGENCE_MODEL_ID") || "prebuilt-invoice"
+    const modelId = "prebuilt-document"
 
     console.log("🔧 Azure Configuration:")
     console.log("  - Endpoint:", azureEndpoint ? "✅ Set" : "❌ Missing")
@@ -306,6 +306,15 @@ Deno.serve(async (req) => {
           
           const confidence = azureField?.confidence || null
           
+          // Extract bounding regions from Azure response
+          let pageNumber = null
+          let boundingBox = null
+          if (azureField?.boundingRegions && azureField.boundingRegions.length > 0) {
+            const firstRegion = azureField.boundingRegions[0]
+            pageNumber = firstRegion.pageNumber
+            boundingBox = firstRegion.polygon || firstRegion.boundingBox
+          }
+          
           console.log(`  "${field.name}" → ${matchedFieldName ? `"${matchedFieldName}" ✅ (${matchType})` : 'Not found ❌'}`)
           if (matchedFieldName && matchedFieldName !== field.name) {
             console.log(`    ℹ️  Matched using ${matchType} matching: "${field.name}" → "${matchedFieldName}"`)
@@ -313,12 +322,17 @@ Deno.serve(async (req) => {
           if (value !== null) {
             console.log(`    📝 Value: "${value}" (confidence: ${confidence})`)
           }
+          if (pageNumber && boundingBox) {
+            console.log(`    📍 Location: Page ${pageNumber}, Bounding box: [${boundingBox.slice(0, 8).join(', ')}${boundingBox.length > 8 ? '...' : ''}]`)
+          }
           
           return {
             document_id: docId,
             field_id: field.id,
             value: String(value || ''),
             confidence: confidence,
+            pageNumber: pageNumber,
+            boundingBox: boundingBox,
             found: matchResult !== null && value !== null
           }
         })
@@ -328,10 +342,24 @@ Deno.serve(async (req) => {
         console.log(`  ${idx + 1}. Field ID: ${data.field_id}`)
         console.log(`     - Value: "${data.value}"`)
         console.log(`     - Confidence: ${data.confidence}`)
+        console.log(`     - Page: ${data.pageNumber || 'N/A'}`)
         console.log(`     - Found in Azure: ${data.found ? '✅' : '❌'}`)
       })
 
-      const fieldsToInsert = dataToSave.map(({ found, ...rest }: any) => rest)
+      // Update document_fields with bounding box data
+      for (const data of dataToSave) {
+        if (data.pageNumber && data.boundingBox) {
+          await supabaseClient
+            .from("document_fields")
+            .update({ 
+              page_number: data.pageNumber, 
+              bounding_box: data.boundingBox 
+            })
+            .eq("id", data.field_id)
+        }
+      }
+
+      const fieldsToInsert = dataToSave.map(({ found, pageNumber, boundingBox, ...rest }: any) => rest)
 
       if (fieldsToInsert.length > 0) {
         console.log(`💾 Saving ${fieldsToInsert.length} field(s) to extracted_data table...`)

@@ -61,8 +61,10 @@ CREATE TABLE IF NOT EXISTS public.document_fields (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   document_id uuid NOT NULL REFERENCES public.documents ON DELETE CASCADE,
   name text NOT NULL,
-  type text DEFAULT 'text' CHECK (type IN ('text', 'number', 'date', 'email', 'phone', 'currency', 'boolean')),
+  type text DEFAULT 'text' CHECK (type IN ('text', 'number', 'date', 'email', 'phone', 'currency', 'boolean', 'address', 'url')),
   description text,
+  page_number integer,
+  bounding_box jsonb,
   created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

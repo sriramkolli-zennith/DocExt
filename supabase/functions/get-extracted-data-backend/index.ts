@@ -67,7 +67,9 @@ Deno.serve(async (req) => {
           id,
           name,
           type,
-          description
+          description,
+          page_number,
+          bounding_box
         )
       `)
       .eq("document_id", documentId)
@@ -89,6 +91,8 @@ Deno.serve(async (req) => {
       fieldDescription: item.document_fields.description,
       value: item.value,
       confidence: item.confidence,
+      pageNumber: item.document_fields.page_number,
+      boundingBox: item.document_fields.bounding_box,
     })) || []
 
     return new Response(

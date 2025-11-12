@@ -17,6 +17,11 @@ import { ArrowLeft, Plus, Eye, Trash2, Download, RotateCcw } from "lucide-react"
 import Navbar from "@/components/navbar"
 import FieldValidationModal from "@/components/field-validation-modal"
 
+interface BoundingRegion {
+  pageNumber: number
+  polygon: number[]
+}
+
 interface ExtractedField {
   id: string
   fieldId: string
@@ -25,6 +30,9 @@ interface ExtractedField {
   fieldDescription: string
   value: string
   confidence: number | null
+  boundingRegions?: BoundingRegion[]
+  pageNumber?: number
+  boundingBox?: number[]
 }
 
 interface Document {
@@ -444,10 +452,18 @@ export default function DocumentDetailPage() {
                 </Card>
               ) : (
                 fields.map((field) => (
-                  <Card key={field.id} className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:shadow-md dark:hover:shadow-lg transition cursor-pointer" onClick={() => {
-                    setSelectedFieldForPDF(field)
-                    setPdfSidebarOpen(true)
-                  }}>
+                  <Card 
+                    key={field.id} 
+                    className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:shadow-md dark:hover:shadow-lg transition cursor-pointer" 
+                    onMouseEnter={() => {
+                      setSelectedFieldForPDF(field)
+                      setPdfSidebarOpen(true)
+                    }}
+                    onClick={() => {
+                      setSelectedFieldForPDF(field)
+                      setPdfSidebarOpen(true)
+                    }}
+                  >
                     <CardContent className="py-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
@@ -580,6 +596,8 @@ export default function DocumentDetailPage() {
           fieldName={selectedFieldForPDF.fieldName}
           fieldValue={selectedFieldForPDF.value}
           confidence={selectedFieldForPDF.confidence || undefined}
+          pageNumber={selectedFieldForPDF.pageNumber}
+          boundingBox={selectedFieldForPDF.boundingBox}
         />
       )}
     </div>

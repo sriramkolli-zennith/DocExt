@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react"
 import { X, AlertCircle, ZoomIn, ZoomOut, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Document, Page, pdfjs } from 'react-pdf'
+import 'react-pdf/dist/esm/Page/AnnotationLayer.css'
+import 'react-pdf/dist/esm/Page/TextLayer.css'
 
 // Set up PDF.js worker
 if (typeof window !== 'undefined') {
@@ -329,8 +331,8 @@ export function PDFViewerSidebar({
                       <Page
                         pageNumber={page}
                         scale={scale}
-                        renderTextLayer={false}
-                        renderAnnotationLayer={false}
+                        renderTextLayer={true}
+                        renderAnnotationLayer={true}
                         className="shadow-lg border border-gray-300 dark:border-slate-700"
                         onLoadSuccess={() => {
                           if (page === pageNumber && boundingBox) {

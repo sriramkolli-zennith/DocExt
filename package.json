@@ -12,12 +12,15 @@
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
     "functions:serve": "supabase functions serve --env-file supabase/.env.local",
-    "functions:deploy": "supabase functions deploy upload-document-backend && supabase functions deploy process-document-backend && supabase functions deploy get-extracted-data-backend",
-    "functions:deploy:upload": "supabase functions deploy upload-document-backend",
-    "functions:deploy:process": "supabase functions deploy process-document-backend",
-    "functions:deploy:data": "supabase functions deploy get-extracted-data-backend",
-    "functions:logs": "supabase functions logs",
-    "secrets:set": "supabase secrets set AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT=$AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT AZURE_DOCUMENT_INTELLIGENCE_API_KEY=$AZURE_DOCUMENT_INTELLIGENCE_API_KEY AZURE_DOCUMENT_INTELLIGENCE_MODEL_ID=$AZURE_DOCUMENT_INTELLIGENCE_MODEL_ID GEMINI_API_KEY=$GEMINI_API_KEY"
+    "functions:deploy": "supabase functions deploy upload-document-backend --project-ref lputifqvrradmfedheov && supabase functions deploy process-document-backend --project-ref lputifqvrradmfedheov && supabase functions deploy get-extracted-data-backend --project-ref lputifqvrradmfedheov",
+    "functions:deploy:upload": "supabase functions deploy upload-document-backend --project-ref lputifqvrradmfedheov",
+    "functions:deploy:process": "supabase functions deploy process-document-backend --project-ref lputifqvrradmfedheov",
+    "functions:deploy:data": "supabase functions deploy get-extracted-data-backend --project-ref lputifqvrradmfedheov",
+    "functions:logs": "supabase functions logs --project-ref lputifqvrradmfedheov",
+    "functions:logs:process": "supabase functions logs process-document-backend --project-ref lputifqvrradmfedheov --follow",
+    "secrets:set": "supabase secrets set AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT=$AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT AZURE_DOCUMENT_INTELLIGENCE_API_KEY=$AZURE_DOCUMENT_INTELLIGENCE_API_KEY GEMINI_API_KEY=$GEMINI_API_KEY",
+    "secrets:list": "supabase secrets list --project-ref lputifqvrradmfedheov",
+    "deploy": "npm run build && npm run functions:deploy"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "1.1.4",
@@ -32,8 +35,10 @@
     "lucide-react": "^0.454.0",
     "next": "16.0.0",
     "next-themes": "^0.4.6",
+    "pdfjs-dist": "^5.4.394",
     "react": "19.2.0",
     "react-dom": "19.2.0",
+    "react-pdf": "^10.2.0",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
     "zod": "3.25.76"
