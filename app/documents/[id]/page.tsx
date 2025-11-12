@@ -454,18 +454,7 @@ export default function DocumentDetailPage() {
                 fields.map((field) => (
                   <Card 
                     key={field.id} 
-                    className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:shadow-md dark:hover:shadow-lg transition cursor-pointer" 
-                    onMouseEnter={() => {
-                      // Only show sidebar on desktop (lg and up)
-                      if (window.innerWidth >= 1024) {
-                        setSelectedFieldForPDF(field)
-                        setPdfSidebarOpen(true)
-                      }
-                    }}
-                    onMouseLeave={() => {
-                      // Close sidebar when mouse leaves the card
-                      setPdfSidebarOpen(false)
-                    }}
+                    className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:shadow-md dark:hover:shadow-lg transition" 
                     onClick={() => {
                       setSelectedFieldForPDF(field)
                       setPdfSidebarOpen(true)
@@ -475,7 +464,18 @@ export default function DocumentDetailPage() {
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2 flex-wrap">
-                            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">{field.fieldName}</p>
+                            <p 
+                              className="text-sm font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition"
+                              onMouseEnter={() => {
+                                // Only show sidebar on desktop (lg and up) when hovering field name
+                                if (window.innerWidth >= 1024) {
+                                  setSelectedFieldForPDF(field)
+                                  setPdfSidebarOpen(true)
+                                }
+                              }}
+                            >
+                              {field.fieldName}
+                            </p>
                             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                               field.fieldType === 'currency' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' :
                               field.fieldType === 'date' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' :
@@ -505,7 +505,7 @@ export default function DocumentDetailPage() {
                               setSelectedFieldForPDF(field)
                               setPdfSidebarOpen(true)
                             }}
-                            className="gap-2 whitespace-nowrap bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white"
+                            className="lg:hidden gap-2 whitespace-nowrap bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white"
                             title="View in PDF"
                           >
                             <Eye className="h-4 w-4" />

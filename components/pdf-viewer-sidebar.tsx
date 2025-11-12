@@ -58,7 +58,7 @@ export function PDFViewerSidebar({
       // Delay scroll to ensure page is rendered
       setTimeout(() => {
         scrollToPage(pageNumber)
-      }, 500)
+      }, 800)
     }
   }, [isOpen, pageNumber])
 
@@ -67,14 +67,14 @@ export function PDFViewerSidebar({
     if (boundingBox && pageNumber && isOpen && !pdfLoading) {
       setTimeout(() => {
         drawAnnotation(pageNumber, boundingBox)
-      }, 600)
+      }, 900)
     }
   }, [boundingBox, pageNumber, isOpen, pdfLoading, scale])
 
   const scrollToPage = (page: number) => {
     const pageElement = pageRefs.current.get(page)
     if (pageElement && scrollContainerRef.current) {
-      pageElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
   }
 
@@ -124,17 +124,9 @@ export function PDFViewerSidebar({
     }
     ctx.closePath()
 
-    // Set style based on confidence
-    if (confidence && confidence > 0.8) {
-      ctx.strokeStyle = 'rgba(34, 197, 94, 0.8)' // green
-      ctx.fillStyle = 'rgba(34, 197, 94, 0.15)'
-    } else if (confidence && confidence > 0.6) {
-      ctx.strokeStyle = 'rgba(234, 179, 8, 0.8)' // yellow
-      ctx.fillStyle = 'rgba(234, 179, 8, 0.15)'
-    } else {
-      ctx.strokeStyle = 'rgba(59, 130, 246, 0.8)' // blue
-      ctx.fillStyle = 'rgba(59, 130, 246, 0.15)'
-    }
+    // Set style to red
+    ctx.strokeStyle = 'rgba(239, 68, 68, 0.9)' // red
+    ctx.fillStyle = 'rgba(239, 68, 68, 0.2)'
     
     ctx.lineWidth = 3
     ctx.fill()
