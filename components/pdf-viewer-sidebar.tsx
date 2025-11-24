@@ -67,12 +67,12 @@ export function PDFViewerSidebar({
   const latestBoundingBoxRef = useRef<number[] | undefined>(undefined)
   const autoCloseTimerRef = useRef<NodeJS.Timeout | null>(null)
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null)
-  const [countdown, setCountdown] = useState<number>(10)
+  const [countdown, setCountdown] = useState<number>(5)
 
   // Function to start auto-close timer after scroll completes
   const startAutoCloseTimer = useCallback(() => {
     // Reset countdown
-    setCountdown(10)
+    setCountdown(5)
     
     // Clear any existing timers
     if (autoCloseTimerRef.current) {
@@ -82,7 +82,7 @@ export function PDFViewerSidebar({
       clearInterval(countdownIntervalRef.current)
     }
     
-    console.log('⏱️ Starting 10-second auto-close timer')
+    console.log('⏱️ Starting 5-second auto-close timer')
     
     // Update countdown every second
     countdownIntervalRef.current = setInterval(() => {
@@ -97,10 +97,10 @@ export function PDFViewerSidebar({
       })
     }, 1000)
     
-    // Set timer to auto-close after 10 seconds
+    // Set timer to auto-close after 5 seconds
     autoCloseTimerRef.current = setTimeout(() => {
       onClose()
-    }, 10000)
+    }, 5000)
   }, [onClose])
 
   // Cleanup timers when sidebar closes
