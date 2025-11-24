@@ -115,6 +115,7 @@ export async function checkDuplicateDocument(fileName: string): Promise<{
   document?: { id: string; name: string; storage_path: string }
 }> {
   try {
+    console.log('checkDuplicateDocument called with fileName:', fileName)
     const supabase = createClient()
     
     // Extract just the filename from storage path for comparison
@@ -128,20 +129,25 @@ export async function checkDuplicateDocument(fileName: string): Promise<{
       return { exists: false }
     }
 
+    console.log('Found documents:', documents?.length || 0)
+
     // Check if any document has the same file name in storage_path
     const duplicate = documents?.find(doc => {
       const storagePath = doc.storage_path || ""
       const existingFileName = storagePath.split("/").pop() || ""
+      console.log(`Comparing "${existingFileName}" with "${fileName}"`)
       return existingFileName === fileName
     })
 
     if (duplicate) {
+      console.log('Duplicate found:', duplicate)
       return {
         exists: true,
         document: duplicate
       }
     }
 
+    console.log('No duplicate found')
     return { exists: false }
   } catch (error) {
     console.error("Error in checkDuplicateDocument:", error)

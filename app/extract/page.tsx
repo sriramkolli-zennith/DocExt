@@ -108,24 +108,35 @@ export default function ExtractPage() {
   }
 
   const checkFilesForDuplicates = async (newFiles: File[]) => {
-    for (const file of newFiles) {
-      const duplicateCheck = await checkDuplicateDocument(file.name)
-      
-      if (duplicateCheck.exists && duplicateCheck.document) {
-        // Show duplicate modal for the first duplicate found
-        setDuplicateInfo({
-          file,
-          documentId: duplicateCheck.document.id,
-          documentName: duplicateCheck.document.name,
-        })
-        setShowDuplicateModal(true)
-        return // Stop processing after finding first duplicate
+    try {
+      for (const file of newFiles) {
+        console.log('Checking for duplicate:', file.name)
+        const duplicateCheck = await checkDuplicateDocument(file.name)
+        console.log('Duplicate check result:', duplicateCheck)
+        
+        if (duplicateCheck.exists && duplicateCheck.document) {
+          // Show duplicate modal for the first duplicate found
+          console.log('Duplicate found! Showing modal...')
+          setDuplicateInfo({
+            file,
+            documentId: duplicateCheck.document.id,
+            documentName: duplicateCheck.document.name,
+          })
+          setShowDuplicateModal(true)
+          return // Stop processing after finding first duplicate
+        }
       }
+      
+      // If no duplicates, add all files
+      console.log('No duplicates found, adding files')
+      setFiles([...files, ...newFiles])
+      setError(null)
+    } catch (error) {
+      console.error('Error checking duplicates:', error)
+      // If there's an error, still allow the upload
+      setFiles([...files, ...newFiles])
+      setError(null)
     }
-    
-    // If no duplicates, add all files
-    setFiles([...files, ...newFiles])
-    setError(null)
   }
 
   const handleDuplicateModalClose = () => {
