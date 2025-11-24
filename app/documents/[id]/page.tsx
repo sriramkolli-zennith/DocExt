@@ -345,7 +345,7 @@ export default function DocumentDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-slate-900 text-gray-900 dark:text-white">
+      <div className="min-h-screen bg-background text-gray-900 dark:text-white">
         <Navbar />
         <div className="flex items-center justify-center h-96">
           <p className="text-gray-600 dark:text-gray-400">Loading document...</p>
@@ -356,7 +356,7 @@ export default function DocumentDetailPage() {
 
   if (!document) {
     return (
-      <div className="min-h-screen bg-white dark:bg-slate-900 text-gray-900 dark:text-white">
+      <div className="min-h-screen bg-background text-gray-900 dark:text-white">
         <Navbar />
         <div className="flex items-center justify-center h-96">
           <p className="text-gray-600 dark:text-gray-400">Document not found</p>
@@ -366,14 +366,14 @@ export default function DocumentDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-900 text-gray-900 dark:text-white">
+    <div className="min-h-screen bg-background text-gray-900 dark:text-white">
       <Navbar />
       <SessionWarningModal open={showWarning} onExtend={extendSession} />
 
       <div className={`transition-all duration-300 ease-out ${pdfSidebarOpen ? "lg:pr-[50%]" : "pr-0"}`}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
           {/* Header */}
-          <Link href="/documents" className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline mb-6">
+          <Link href="/documents" className="flex items-center gap-2 text-gray-900 dark:text-white hover:underline mb-6">
           <ArrowLeft className="h-4 w-4" />
           Back to Documents
         </Link>
@@ -382,7 +382,7 @@ export default function DocumentDetailPage() {
           <div>
             <h1 className="text-3xl sm:text-4xl font-bold mb-2">{document.name}</h1>
             <p className="text-gray-600 dark:text-gray-400">
-              Status: <span className={`capitalize font-medium ${isProcessing || document.status === 'processing' ? 'text-yellow-500 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'}`}>
+              Status: <span className={`capitalize font-medium ${isProcessing || document.status === 'processing' ? 'text-gray-700 dark:text-gray-300' : 'text-gray-900 dark:text-white'}`}>
                 {isProcessing ? 'processing' : document.status}
               </span> • {fields.length} field{fields.length !== 1 ? "s" : ""}
             </p>
@@ -441,7 +441,7 @@ export default function DocumentDetailPage() {
                       <option value="url">URL</option>
                     </select>
                   </div>
-                  <Button type="submit" className="gap-2 w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white disabled:opacity-60" disabled={isProcessing}>
+                  <Button type="submit" className="gap-2 w-full bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black disabled:opacity-60" disabled={isProcessing}>
                     <Plus className="h-4 w-4" />
                     {isProcessing ? 'Adding & Extracting...' : 'Add Field'}
                   </Button>
@@ -472,7 +472,7 @@ export default function DocumentDetailPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2 flex-wrap">
                             <p 
-                              className="text-sm font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition"
+                              className="text-sm font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:text-gray-900 dark:hover:text-white transition"
                               onMouseEnter={() => {
                                 // Only show sidebar on desktop (lg and up) when hovering field name
                                 if (window.innerWidth >= 1024) {
@@ -484,13 +484,13 @@ export default function DocumentDetailPage() {
                               {field.fieldName}
                             </p>
                             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                              field.fieldType === 'currency' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' :
-                              field.fieldType === 'date' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' :
-                              field.fieldType === 'number' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' :
-                              field.fieldType === 'email' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300' :
-                              field.fieldType === 'phone' ? 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300' :
-                              field.fieldType === 'address' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' :
-                              field.fieldType === 'url' ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300' :
+                              field.fieldType === 'currency' ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200' :
+                              field.fieldType === 'date' ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200' :
+                              field.fieldType === 'number' ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200' :
+                              field.fieldType === 'email' ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200' :
+                              field.fieldType === 'phone' ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200' :
+                              field.fieldType === 'address' ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200' :
+                              field.fieldType === 'url' ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200' :
                               'bg-gray-100 text-gray-700 dark:bg-gray-900/40 dark:text-gray-300'
                             }`}>
                               {field.fieldType}
@@ -512,7 +512,7 @@ export default function DocumentDetailPage() {
                               setSelectedFieldForPDF(field)
                               setPdfSidebarOpen(true)
                             }}
-                            className="lg:hidden gap-2 whitespace-nowrap bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white"
+                            className="lg:hidden gap-2 whitespace-nowrap bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black"
                             title="View in PDF"
                           >
                             <Eye className="h-4 w-4" />
@@ -539,7 +539,7 @@ export default function DocumentDetailPage() {
                               e.stopPropagation()
                               handleDeleteField(field.fieldId)
                             }}
-                            className="hidden sm:flex text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950"
+                            className="hidden sm:flex text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800"
                             title="Delete field"
                           >
                             <Trash2 className="h-4 w-4" />

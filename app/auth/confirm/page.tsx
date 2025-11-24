@@ -67,8 +67,8 @@ function ConfirmContent() {
           <CardHeader>
             <CardTitle className="text-2xl flex items-center gap-2">
               {status === "loading" && <Loader2 className="h-5 w-5 animate-spin" />}
-              {status === "success" && <CheckCircle2 className="h-5 w-5 text-green-500" />}
-              {status === "error" && <XCircle className="h-5 w-5 text-red-500" />}
+              {status === "success" && <CheckCircle2 className="h-5 w-5 text-gray-900 dark:text-white" />}
+              {status === "error" && <XCircle className="h-5 w-5 text-gray-900 dark:text-white" />}
               {status === "loading" && "Confirming Email..."}
               {status === "success" && "Email Confirmed!"}
               {status === "error" && "Confirmation Failed"}

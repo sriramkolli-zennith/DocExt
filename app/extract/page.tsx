@@ -3,9 +3,10 @@
 import type React from "react"
 
 import { useState, useRef } from "react"
-import { uploadDocument, processDocument } from "@/lib/edge-functions"
+import { uploadDocument, processDocument, checkDuplicateDocument } from "@/lib/edge-functions"
 import { useSessionManager } from "@/lib/useSessionManager"
 import { SessionWarningModal } from "@/components/session-warning-modal"
+import { DuplicateDocumentModal } from "@/components/duplicate-document-modal"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -63,6 +64,12 @@ export default function ExtractPage() {
   const [error, setError] = useState<string | null>(null)
   const [step, setStep] = useState<"name" | "upload" | "fields">("name")
   const [isDragActive, setIsDragActive] = useState(false)
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false)
+  const [duplicateInfo, setDuplicateInfo] = useState<{
+    file: File
+    documentId: string
+    documentName: string
+  } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
   
@@ -95,8 +102,45 @@ export default function ExtractPage() {
       }
       return true
     })
-    setFiles([...files, ...validFiles])
+    
+    // Check for duplicates before adding files
+    checkFilesForDuplicates(validFiles)
+  }
+
+  const checkFilesForDuplicates = async (newFiles: File[]) => {
+    for (const file of newFiles) {
+      const duplicateCheck = await checkDuplicateDocument(file.name)
+      
+      if (duplicateCheck.exists && duplicateCheck.document) {
+        // Show duplicate modal for the first duplicate found
+        setDuplicateInfo({
+          file,
+          documentId: duplicateCheck.document.id,
+          documentName: duplicateCheck.document.name,
+        })
+        setShowDuplicateModal(true)
+        return // Stop processing after finding first duplicate
+      }
+    }
+    
+    // If no duplicates, add all files
+    setFiles([...files, ...newFiles])
     setError(null)
+  }
+
+  const handleDuplicateModalClose = () => {
+    setShowDuplicateModal(false)
+    setDuplicateInfo(null)
+  }
+
+  const handleDuplicateContinue = () => {
+    // User chose to upload anyway
+    if (duplicateInfo) {
+      setFiles([...files, duplicateInfo.file])
+      setError(null)
+    }
+    setShowDuplicateModal(false)
+    setDuplicateInfo(null)
   }
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -223,9 +267,17 @@ export default function ExtractPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-900 text-gray-900 dark:text-white">
+    <div className="min-h-screen bg-background text-gray-900 dark:text-white">
       <Navbar />
       <SessionWarningModal open={showWarning} onExtend={extendSession} />
+      <DuplicateDocumentModal
+        isOpen={showDuplicateModal}
+        onClose={handleDuplicateModalClose}
+        onContinue={handleDuplicateContinue}
+        duplicateDocumentId={duplicateInfo?.documentId || ""}
+        duplicateDocumentName={duplicateInfo?.documentName || ""}
+        fileName={duplicateInfo?.file.name || ""}
+      />
 
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
         {step === "name" && (
@@ -249,8 +301,8 @@ export default function ExtractPage() {
                   />
                   <p className="text-sm text-gray-600 dark:text-gray-400">Give this extraction a descriptive name</p>
                 </div>
-                {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
-                <Button type="submit" size="lg" className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white">
+                {error && <p className="text-sm text-gray-900 dark:text-white">{error}</p>}
+                <Button type="submit" size="lg" className="w-full bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black">
                   Continue
                 </Button>
               </form>
@@ -272,7 +324,7 @@ export default function ExtractPage() {
                   onDrop={handleDrop}
                   onClick={() => fileInputRef.current?.click()}
                   className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition ${
-                    isDragActive ? "border-blue-500 bg-blue-50 dark:bg-blue-950" : "border-gray-300 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-500"
+                    isDragActive ? "border-gray-500 bg-gray-100 dark:bg-gray-800" : "border-gray-300 dark:border-slate-600 hover:border-gray-500 dark:hover:border-gray-500"
                   }`}
                 >
                   <input
@@ -299,7 +351,7 @@ export default function ExtractPage() {
                           <CardContent className="p-4">
                             <div className="flex items-center gap-3">
                               <div className="shrink-0">
-                                <FileText className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                                <FileText className="h-8 w-8 text-gray-900 dark:text-white" />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="font-medium truncate text-gray-900 dark:text-white">{file.name}</p>
@@ -327,13 +379,13 @@ export default function ExtractPage() {
                   </div>
                 )}
 
-                {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+                {error && <p className="text-sm text-gray-900 dark:text-white">{error}</p>}
 
                 <div className="flex gap-3">
                   <Button type="button" variant="outline" onClick={() => setStep("name")} className="flex-1 text-gray-900 dark:text-white border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-700">
                     Back
                   </Button>
-                  <Button type="submit" size="lg" className="flex-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white">
+                  <Button type="submit" size="lg" className="flex-1 bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black">
                     Continue
                   </Button>
                 </div>
@@ -375,7 +427,7 @@ export default function ExtractPage() {
                             className={`p-3 rounded-lg border text-left transition-all text-sm sm:text-base ${
                               isAdded 
                                 ? 'bg-gray-100 dark:bg-slate-700 border-gray-300 dark:border-slate-600 cursor-not-allowed opacity-60' 
-                                : 'bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600 hover:bg-blue-50 dark:hover:bg-slate-600 hover:border-blue-400 dark:hover:border-blue-500 cursor-pointer'
+                                : 'bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600 hover:border-gray-500 dark:hover:border-gray-500 cursor-pointer'
                             }`}
                           >
                             <div className="flex items-start justify-between gap-2">
@@ -383,9 +435,9 @@ export default function ExtractPage() {
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm font-medium text-gray-900 dark:text-white">{suggestion.name}</span>
                                   <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                    suggestion.type === 'currency' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' :
-                                    suggestion.type === 'date' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' :
-                                    suggestion.type === 'number' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' :
+                                    suggestion.type === 'currency' ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200' :
+                                    suggestion.type === 'date' ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200' :
+                                    suggestion.type === 'number' ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200' :
                                     'bg-gray-100 text-gray-700 dark:bg-gray-900/40 dark:text-gray-300'
                                   }`}>
                                     {suggestion.type}
@@ -445,12 +497,12 @@ export default function ExtractPage() {
                           <div className="flex items-center gap-2 min-w-0">
                             <span className="text-sm font-medium text-gray-900 dark:text-white truncate">{field.name}</span>
                             <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
-                              field.type === 'currency' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' :
-                              field.type === 'date' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' :
-                              field.type === 'number' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' :
-                              field.type === 'email' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300' :
-                              field.type === 'phone' ? 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300' :
-                              field.type === 'boolean' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' :
+                              field.type === 'currency' ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200' :
+                              field.type === 'date' ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200' :
+                              field.type === 'number' ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200' :
+                              field.type === 'email' ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200' :
+                              field.type === 'phone' ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200' :
+                              field.type === 'boolean' ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200' :
                               'bg-gray-100 text-gray-700 dark:bg-gray-900/40 dark:text-gray-300'
                             }`}>
                               {field.type}
@@ -465,7 +517,7 @@ export default function ExtractPage() {
                   </div>
                 )}
 
-                {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+                {error && <p className="text-sm text-gray-900 dark:text-white">{error}</p>}
 
                 <div className="flex gap-3">
                   <Button type="button" variant="outline" onClick={() => setStep("upload")} className="flex-1 text-gray-900 dark:text-white border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-700">
@@ -476,7 +528,7 @@ export default function ExtractPage() {
                     onClick={handleExtraction}
                     disabled={isLoading}
                     size="lg"
-                    className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white disabled:opacity-60"
+                    className="flex-1 gap-2 bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black disabled:opacity-60"
                   >
                     {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                     {isLoading ? "Extracting..." : "Start Extraction"}

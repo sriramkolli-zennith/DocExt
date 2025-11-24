@@ -19,8 +19,8 @@ export function SessionWarningModal({ open, onExtend }: SessionWarningModalProps
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/60">
-      <div className="bg-white dark:bg-slate-900 rounded-lg shadow-lg p-6 w-full max-w-md mx-4 border border-yellow-200 dark:border-yellow-900">
-        <h2 className="text-xl font-bold text-yellow-600 dark:text-yellow-400 mb-2">
+      <div className="bg-card rounded-lg shadow-lg p-6 w-full max-w-md mx-4 border border-gray-300 dark:border-gray-700">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
           Session Expiring Soon
         </h2>
         <p className="text-foreground mb-6">

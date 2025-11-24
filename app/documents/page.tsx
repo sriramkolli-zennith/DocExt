@@ -102,7 +102,7 @@ export default function DocumentsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-slate-900">
+      <div className="min-h-screen bg-background">
         <Navbar />
         <div className="flex items-center justify-center h-96">
           <p className="text-gray-600 dark:text-gray-400">Loading documents...</p>
@@ -112,7 +112,7 @@ export default function DocumentsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-900 text-gray-900 dark:text-white">
+    <div className="min-h-screen bg-background text-gray-900 dark:text-white">
       <Navbar />
       <SessionWarningModal open={showWarning} onExtend={extendSession} />
 
@@ -124,7 +124,7 @@ export default function DocumentsPage() {
             <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Browse and manage all your documents</p>
           </div>
           <Link href="/extract" className="w-full sm:w-auto">
-            <Button size="lg" className="gap-2 w-full sm:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700">
+            <Button size="lg" className="gap-2 w-full sm:w-auto bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black">
               <Plus className="h-5 w-5" />
               New Extraction
             </Button>
@@ -140,7 +140,7 @@ export default function DocumentsPage() {
                 placeholder="Search documents..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 w-full text-sm sm:text-base bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                className="pl-10 w-full text-sm sm:text-base bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400"
               />
             </div>
             <div className="flex gap-2 overflow-x-auto pb-2 lg:pb-0">
@@ -151,7 +151,7 @@ export default function DocumentsPage() {
                   onClick={() => setStatusFilter(status)}
                   className={`whitespace-nowrap text-xs sm:text-sm ${
                     statusFilter === status 
-                      ? "bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 text-white" 
+                      ? "bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black" 
                       : "bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
                   }`}
                 >
@@ -177,7 +177,7 @@ export default function DocumentsPage() {
               </p>
               {documents.length === 0 && (
                 <Link href="/extract">
-                  <Button className="gap-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700">
+                  <Button className="gap-2 bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black">
                     <Plus className="h-4 w-4" />
                     Create Your First Extraction
                   </Button>

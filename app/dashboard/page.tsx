@@ -71,7 +71,7 @@ async function DashboardDataWrapper() {
 
 export default function DashboardPage() {
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-900 text-gray-900 dark:text-white">
+    <div className="min-h-screen bg-background text-gray-900 dark:text-white">
       <Navbar />
       <Suspense fallback={<DashboardSkeleton />}>
         <DashboardDataWrapper />

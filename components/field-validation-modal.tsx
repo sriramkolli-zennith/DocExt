@@ -46,7 +46,7 @@ export default function FieldValidationModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 dark:bg-black/70 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-gray-200 dark:border-slate-700">
+      <div className="bg-card rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-gray-200 dark:border-slate-700">
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
           <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate">{field.fieldName}</h2>
@@ -95,10 +95,10 @@ export default function FieldValidationModal({
                     <div 
                       className={`h-full transition-all ${
                         field.confidence > 0.8 
-                          ? "bg-green-500" 
+                          ? "bg-gray-900 dark:bg-gray-100" 
                           : field.confidence > 0.6 
-                          ? "bg-yellow-500" 
-                          : "bg-red-500"
+                          ? "bg-gray-600 dark:bg-gray-400" 
+                          : "bg-gray-400 dark:bg-gray-600"
                       }`}
                       style={{ width: `${field.confidence * 100}%` }} 
                     />
@@ -121,7 +121,7 @@ export default function FieldValidationModal({
               <Button 
                 onClick={handleSave} 
                 disabled={isSaving} 
-                className="flex-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white"
+                className="flex-1 bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black"
               >
                 {isSaving ? "Saving..." : "Save"}
               </Button>

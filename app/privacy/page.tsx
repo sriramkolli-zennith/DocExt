@@ -6,9 +6,9 @@ export const dynamic = "force-static"
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-900">
+    <div className="min-h-screen bg-background">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
-        <Link href="/" className="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline mb-8">
+        <Link href="/" className="inline-flex items-center gap-2 text-gray-900 dark:text-white hover:underline mb-8">
           <ArrowLeft className="h-4 w-4" />
           Back to Home
         </Link>

@@ -55,10 +55,10 @@ export default function AuthForm({
   onOAuthLogin,
 }: AuthFormProps) {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 py-10 sm:py-12 bg-white dark:bg-slate-900">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 py-10 sm:py-12 bg-background">
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-2 mb-8 sm:mb-10">
-          <FileText className="h-6 w-6 sm:h-7 sm:w-7 text-blue-600 dark:text-blue-400" />
+          <FileText className="h-6 w-6 sm:h-7 sm:w-7 text-gray-900 dark:text-white" />
           <span className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">DocExtract</span>
         </div>
 
@@ -70,7 +70,7 @@ export default function AuthForm({
           <CardContent className="pt-6 sm:pt-8">
             <div className="space-y-4">
               {children}
-              {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+              {error && <p className="text-sm text-gray-900 dark:text-white">{error}</p>}
             </div>
 
             {showOAuth && (
@@ -109,7 +109,7 @@ export default function AuthForm({
 
             <div className="mt-4 sm:mt-6 text-center text-sm text-gray-900 dark:text-white">
               {bottomLink.text}{" "}
-              <Link href={bottomLink.href} className="text-blue-600 dark:text-blue-400 hover:underline font-semibold">
+              <Link href={bottomLink.href} className="text-gray-900 dark:text-white hover:underline font-semibold">
                 {bottomLink.label}
               </Link>
             </div>

@@ -38,12 +38,12 @@ export default function ForgotPasswordPage() {
 
   if (isSuccess) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-900 p-4">
-        <Card className="w-full max-w-md bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 shadow-lg">
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md bg-card border-gray-200 dark:border-slate-700 shadow-lg">
           <CardHeader className="text-center border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
                       <div className="mb-6 text-center">
-            <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-              <Mail className="h-6 w-6 text-green-600 dark:text-green-400" />
+            <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+              <Mail className="h-6 w-6 text-gray-900 dark:text-white" />
             </div>
             <CardTitle className="text-gray-900 dark:text-white">Check Your Email</CardTitle>
             <CardDescription className="text-gray-600 dark:text-gray-400">
@@ -68,8 +68,8 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-900 p-4 sm:p-6">
-      <Card className="w-full max-w-md bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 shadow-lg">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 sm:p-6">
+      <Card className="w-full max-w-md bg-card border-gray-200 dark:border-slate-700 shadow-lg">
         <CardHeader className="border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
           <CardTitle className="text-gray-900 dark:text-white">Forgot Password</CardTitle>
           <CardDescription className="text-gray-600 dark:text-gray-400">
@@ -93,17 +93,17 @@ export default function ForgotPasswordPage() {
             </div>
 
             {error && (
-              <div className="p-3 rounded-md bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 text-sm">
+              <div className="p-3 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white text-sm">
                 {error}
               </div>
             )}
 
-            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white disabled:opacity-60" disabled={isLoading}>
+            <Button type="submit" className="w-full bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black disabled:opacity-60" disabled={isLoading}>
               {isLoading ? "Sending..." : "Send Reset Link"}
             </Button>
 
             <div className="text-center">
-              <Link href="/auth/login" className="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400">
+              <Link href="/auth/login" className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
                 <ArrowLeft className="h-3 w-3 inline mr-1" />
                 Back to Login
               </Link>

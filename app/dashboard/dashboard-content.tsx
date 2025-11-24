@@ -77,7 +77,7 @@ export default function DashboardContent({ initialDocuments, initialStats }: Das
             <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Overview of your document extraction activity</p>
           </div>
           <Link href="/extract" className="w-full sm:w-auto">
-            <Button size="lg" className="gap-2 w-full sm:w-auto bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700">
+            <Button size="lg" className="gap-2 w-full sm:w-auto bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black">
               <Plus className="h-5 w-5" />
               New Extraction
             </Button>
@@ -93,7 +93,7 @@ export default function DashboardContent({ initialDocuments, initialStats }: Das
                   <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">Total Documents</p>
                   <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1">{stats.total}</p>
                 </div>
-                <FileText className="h-8 w-8 sm:h-10 sm:w-10 text-blue-500 dark:text-blue-400 opacity-80" />
+                <FileText className="h-8 w-8 sm:h-10 sm:w-10 text-gray-900 dark:text-white opacity-80" />
               </div>
             </CardContent>
           </Card>
@@ -103,9 +103,9 @@ export default function DashboardContent({ initialDocuments, initialStats }: Das
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">Completed</p>
-                  <p className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400 mt-1">{stats.completed}</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1">{stats.completed}</p>
                 </div>
-                <CheckCircle2 className="h-8 w-8 sm:h-10 sm:w-10 text-green-500 dark:text-green-400 opacity-80" />
+                <CheckCircle2 className="h-8 w-8 sm:h-10 sm:w-10 text-gray-900 dark:text-white opacity-80" />
               </div>
             </CardContent>
           </Card>
@@ -115,9 +115,9 @@ export default function DashboardContent({ initialDocuments, initialStats }: Das
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">Processing</p>
-                  <p className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400 mt-1">{stats.processing}</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1">{stats.processing}</p>
                 </div>
-                <Clock className="h-8 w-8 sm:h-10 sm:w-10 text-blue-500 dark:text-blue-400 opacity-80" />
+                <Clock className="h-8 w-8 sm:h-10 sm:w-10 text-gray-900 dark:text-white opacity-80" />
               </div>
             </CardContent>
           </Card>
@@ -127,9 +127,9 @@ export default function DashboardContent({ initialDocuments, initialStats }: Das
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">Success Rate</p>
-                  <p className="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400 mt-1">{stats.successRate.toFixed(0)}%</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1">{stats.successRate.toFixed(0)}%</p>
                 </div>
-                <TrendingUp className="h-8 w-8 sm:h-10 sm:w-10 text-purple-500 dark:text-purple-400 opacity-80" />
+                <TrendingUp className="h-8 w-8 sm:h-10 sm:w-10 text-gray-900 dark:text-white opacity-80" />
               </div>
             </CardContent>
           </Card>
@@ -158,9 +158,9 @@ export default function DashboardContent({ initialDocuments, initialStats }: Das
                           </p>
                         </div>
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          doc.status === "completed" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-                          doc.status === "processing" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" :
-                          doc.status === "failed" ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" :
+                          doc.status === "completed" ? "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200" :
+                          doc.status === "processing" ? "bg-gray-300 text-gray-900 dark:bg-gray-600 dark:text-gray-100" :
+                          doc.status === "failed" ? "bg-gray-400 text-gray-900 dark:bg-gray-500 dark:text-gray-100" :
                           "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
                         }`}>
                           {doc.status}

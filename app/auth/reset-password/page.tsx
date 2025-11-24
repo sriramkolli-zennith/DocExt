@@ -59,11 +59,11 @@ export default function ResetPasswordPage() {
 
   if (isSuccess) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-900 p-4">
-        <Card className="w-full max-w-md bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 shadow-lg">
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md bg-card border-gray-200 dark:border-slate-700 shadow-lg">
           <CardHeader className="text-center border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
-            <div className="mx-auto w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
+            <div className="mx-auto w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+              <CheckCircle className="h-6 w-6 text-gray-900 dark:text-white" />
             </div>
             <CardTitle className="text-gray-900 dark:text-white">Password Reset Successful</CardTitle>
             <CardDescription className="text-gray-600 dark:text-gray-400">
@@ -75,7 +75,7 @@ export default function ResetPasswordPage() {
               Redirecting to login page...
             </p>
             <Link href="/auth/login" className="block">
-              <Button className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white">
+              <Button className="w-full bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black">
                 Go to Login
               </Button>
             </Link>
@@ -86,8 +86,8 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-900 p-4 sm:p-6">
-      <Card className="w-full max-w-md bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 shadow-lg">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 sm:p-6">
+      <Card className="w-full max-w-md bg-card border-gray-200 dark:border-slate-700 shadow-lg">
         <CardHeader className="border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
           <CardTitle className="text-gray-900 dark:text-white">Reset Password</CardTitle>
           <CardDescription className="text-gray-600 dark:text-gray-400">
@@ -147,12 +147,12 @@ export default function ResetPasswordPage() {
             </div>
 
             {error && (
-              <div className="p-3 rounded-md bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 text-sm">
+              <div className="p-3 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white text-sm">
                 {error}
               </div>
             )}
 
-            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white disabled:opacity-60" disabled={isLoading}>
+            <Button type="submit" className="w-full bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black disabled:opacity-60" disabled={isLoading}>
               {isLoading ? "Resetting..." : "Reset Password"}
             </Button>
           </form>

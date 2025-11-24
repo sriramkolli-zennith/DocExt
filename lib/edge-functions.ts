@@ -107,3 +107,45 @@ export async function getExtractedData(documentId: string) {
   return callEdgeFunction("get-extracted-data-backend", { documentId })
 }
 
+/**
+ * Check if a document with the same file name already exists
+ */
+export async function checkDuplicateDocument(fileName: string): Promise<{
+  exists: boolean
+  document?: { id: string; name: string; storage_path: string }
+}> {
+  try {
+    const supabase = createClient()
+    
+    // Extract just the filename from storage path for comparison
+    const { data: documents, error } = await supabase
+      .from("documents")
+      .select("id, name, storage_path")
+      .order("created_at", { ascending: false })
+    
+    if (error) {
+      console.error("Error checking duplicates:", error)
+      return { exists: false }
+    }
+
+    // Check if any document has the same file name in storage_path
+    const duplicate = documents?.find(doc => {
+      const storagePath = doc.storage_path || ""
+      const existingFileName = storagePath.split("/").pop() || ""
+      return existingFileName === fileName
+    })
+
+    if (duplicate) {
+      return {
+        exists: true,
+        document: duplicate
+      }
+    }
+
+    return { exists: false }
+  } catch (error) {
+    console.error("Error in checkDuplicateDocument:", error)
+    return { exists: false }
+  }
+}
+

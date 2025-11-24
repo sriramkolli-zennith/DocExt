@@ -97,7 +97,7 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-slate-900 text-gray-900 dark:text-white">
+      <div className="min-h-screen bg-background text-gray-900 dark:text-white">
         <Navbar />
         <div className="flex items-center justify-center h-96">
           <p className="text-gray-600 dark:text-gray-400">Loading profile...</p>
@@ -111,11 +111,11 @@ export default function ProfilePage() {
   const isGoogleLinked = oauthProviders.includes("google")
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-900 text-gray-900 dark:text-white">
+    <div className="min-h-screen bg-background text-gray-900 dark:text-white">
       <Navbar />
       <SessionWarningModal open={showWarning} onExtend={extendSession} />
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
-        <Link href="/dashboard" className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline mb-6">
+        <Link href="/dashboard" className="flex items-center gap-2 text-gray-900 dark:text-white hover:underline mb-6">
           <ArrowLeft className="h-4 w-4" />
           Back to Dashboard
         </Link>
@@ -165,10 +165,10 @@ export default function ProfilePage() {
                 <p className="text-sm text-gray-600 dark:text-gray-400">Minimum 3 characters</p>
               </div>
 
-              {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
-              {success && <p className="text-sm text-green-600 dark:text-green-400">Profile updated successfully!</p>}
+              {error && <p className="text-sm text-gray-900 dark:text-white">{error}</p>}
+              {success && <p className="text-sm text-gray-900 dark:text-white">Profile updated successfully!</p>}
 
-              <Button type="submit" disabled={isSaving} className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white disabled:opacity-60">
+              <Button type="submit" disabled={isSaving} className="bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black disabled:opacity-60">
                 {isSaving ? "Saving..." : "Save Changes"}
               </Button>
             </form>
@@ -179,13 +179,13 @@ export default function ProfilePage() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-700">
                   <div className="flex items-center gap-3">
-                    <Mail className="h-5 w-5 text-blue-500 dark:text-blue-400" />
+                    <Mail className="h-5 w-5 text-gray-900 dark:text-white" />
                     <div>
                       <p className="font-medium text-gray-900 dark:text-white">Email Authentication</p>
                       <p className="text-sm text-gray-600 dark:text-gray-400">Primary login method</p>
                     </div>
                   </div>
-                  <span className="text-sm font-medium text-green-600 dark:text-green-400">✓ Connected</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">✓ Connected</span>
                 </div>
 
                 <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-700">
@@ -196,14 +196,14 @@ export default function ProfilePage() {
                       <p className="text-sm text-gray-600 dark:text-gray-400">Alternative login method</p>
                     </div>
                   </div>
-                  <span className={`text-sm font-medium ${isGithubLinked ? "text-green-600 dark:text-green-400" : "text-gray-600 dark:text-gray-400"}`}>
+                  <span className={`text-sm font-medium ${isGithubLinked ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-gray-400"}`}>
                     {isGithubLinked ? "✓ Connected" : "Not connected"}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-700">
                   <div className="flex items-center gap-3">
-                    <svg className="h-5 w-5 text-red-500 dark:text-red-400" viewBox="0 0 24 24">
+                    <svg className="h-5 w-5 text-gray-900 dark:text-white" viewBox="0 0 24 24">
                       <path
                         fill="currentColor"
                         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -218,7 +218,7 @@ export default function ProfilePage() {
                       <p className="text-sm text-gray-600 dark:text-gray-400">Alternative login method</p>
                     </div>
                   </div>
-                  <span className={`text-sm font-medium ${isGoogleLinked ? "text-green-600 dark:text-green-400" : "text-gray-600 dark:text-gray-400"}`}>
+                  <span className={`text-sm font-medium ${isGoogleLinked ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-gray-400"}`}>
                     {isGoogleLinked ? "✓ Connected" : "Not connected"}
                   </span>
                 </div>
@@ -227,8 +227,8 @@ export default function ProfilePage() {
 
             {/* Danger Zone */}
             <div className="border-t border-gray-200 dark:border-slate-600 pt-6">
-              <h3 className="text-lg font-semibold mb-4 text-red-600 dark:text-red-400">Danger Zone</h3>
-              <Button variant="destructive" onClick={handleLogout} className="gap-2 bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700">
+              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Danger Zone</h3>
+              <Button variant="destructive" onClick={handleLogout} className="gap-2 bg-gray-900 hover:bg-gray-800 dark:bg-gray-100 dark:hover:bg-gray-200 text-white dark:text-black">
                 <LogOut className="h-4 w-4" />
                 Logout
               </Button>

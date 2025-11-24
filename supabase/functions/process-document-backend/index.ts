@@ -195,9 +195,10 @@ Deno.serve(async (req) => {
       }
 
       if (result.status === "failed") {
-        console.error("❌ Azure analysis failed:", result.error)
+        const errorDetails = JSON.stringify(result.error || result, null, 2)
+        console.error("❌ Azure analysis failed:", errorDetails)
         await supabaseClient.from("documents").update({ status: "failed" }).eq("id", docId)
-        throw new Error("Azure analysis failed")
+        throw new Error(`Azure analysis failed: ${errorDetails}`)
       }
 
       await new Promise((resolve) => setTimeout(resolve, 1000))

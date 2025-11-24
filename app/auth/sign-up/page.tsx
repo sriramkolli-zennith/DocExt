@@ -139,16 +139,16 @@ export default function SignUpPage() {
             </button>
           </div>
         </div>
-        <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white disabled:opacity-60" disabled={isLoading}>
+        <Button type="submit" className="w-full bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black disabled:opacity-60" disabled={isLoading}>
           {isLoading ? "Creating account..." : "Sign Up"}
         </Button>
         <p className="text-xs text-center text-gray-600 dark:text-gray-400">
           By signing up, you agree to our{" "}
-          <Link href="/terms" className="text-blue-600 dark:text-blue-400 hover:underline">
+          <Link href="/terms" className="text-gray-900 dark:text-white hover:underline">
             Terms of Service
           </Link>{" "}
           and{" "}
-          <Link href="/privacy" className="text-blue-600 dark:text-blue-400 hover:underline">
+          <Link href="/privacy" className="text-gray-900 dark:text-white hover:underline">
             Privacy Policy
           </Link>
         </p>

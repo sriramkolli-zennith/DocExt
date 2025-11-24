@@ -645,17 +645,17 @@ export function PDFViewerSidebar({
 
   // Get highlight color based on confidence
   const getHighlightColor = () => {
-    if (!confidence) return "bg-blue-50 dark:bg-blue-950/30 border-blue-400 dark:border-blue-600"
-    if (confidence > 0.8) return "bg-green-50 dark:bg-green-950/30 border-green-400 dark:border-green-600"
-    if (confidence > 0.6) return "bg-yellow-50 dark:bg-yellow-950/30 border-yellow-400 dark:border-yellow-600"
-    return "bg-red-50 dark:bg-red-950/30 border-red-400 dark:border-red-600"
+    if (!confidence) return "bg-gray-100 dark:bg-gray-800 border-gray-400 dark:border-gray-600"
+    if (confidence > 0.8) return "bg-gray-200 dark:bg-gray-700 border-gray-500 dark:border-gray-500"
+    if (confidence > 0.6) return "bg-gray-300 dark:bg-gray-600 border-gray-600 dark:border-gray-400"
+    return "bg-gray-400 dark:bg-gray-500 border-gray-700 dark:border-gray-300"
   }
 
   const getHighlightBadgeColor = () => {
-    if (!confidence) return "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
-    if (confidence > 0.8) return "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
-    if (confidence > 0.6) return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300"
-    return "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+    if (!confidence) return "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+    if (confidence > 0.8) return "bg-gray-300 text-gray-900 dark:bg-gray-600 dark:text-gray-100"
+    if (confidence > 0.6) return "bg-gray-400 text-gray-900 dark:bg-gray-500 dark:text-gray-100"
+    return "bg-gray-500 text-white dark:bg-gray-400 dark:text-gray-900"
   }
 
   const getConfidenceLabel = () => {
@@ -672,10 +672,10 @@ export function PDFViewerSidebar({
       : `Matches ${matchCount}`
 
   const matchBadgeClass = (() => {
-    if (isCountingMatches) return "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+    if (isCountingMatches) return "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
     if (matchCount === null) return "bg-gray-100 text-gray-600 dark:bg-slate-800/60 dark:text-gray-300"
-    if (matchCount === 0) return "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
-    return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+    if (matchCount === 0) return "bg-gray-400 text-gray-900 dark:bg-gray-600 dark:text-gray-100"
+    return "bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900"
   })()
 
   return (
@@ -690,7 +690,7 @@ export function PDFViewerSidebar({
 
       {/* Sidebar */}
       <div
-        className={`fixed top-0 right-0 h-screen bg-white dark:bg-slate-900 border-l border-gray-300 dark:border-slate-700 shadow-2xl z-[70] transition-all duration-300 ease-out ${
+        className={`fixed top-0 right-0 h-screen bg-card border-l border-gray-300 dark:border-slate-700 shadow-2xl z-[70] transition-all duration-300 ease-out ${
           isOpen ? "w-full lg:w-1/2" : "w-0"
         } overflow-hidden flex flex-col`}
       >
@@ -738,7 +738,7 @@ export function PDFViewerSidebar({
               variant="ghost"
               size="icon"
               onClick={onClose}
-              className="shrink-0 h-8 w-8 rounded-full border-2 border-black dark:border-white bg-gray-100 dark:bg-slate-700 hover:bg-red-100 dark:hover:bg-red-900 hover:border-red-600 dark:hover:border-red-400 ml-2"
+              className="shrink-0 h-8 w-8 rounded-full border-2 border-black dark:border-white bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-gray-800 hover:border-gray-600 dark:hover:border-gray-400 ml-2"
               title="Close (ESC)"
             >
               <X className="h-5 w-5 text-black dark:text-white font-bold stroke-[3]" />
@@ -755,7 +755,7 @@ export function PDFViewerSidebar({
             <div className="absolute inset-0 flex items-center justify-center bg-white/90 dark:bg-slate-950/90 z-20">
               <div className="text-center space-y-3">
                 <div className="inline-block">
-                  <div className="animate-spin rounded-full h-10 w-10 border-3 border-gray-300 dark:border-slate-700 border-t-blue-500 dark:border-t-blue-400"></div>
+                  <div className="animate-spin rounded-full h-10 w-10 border-3 border-gray-300 dark:border-slate-700 border-t-gray-900 dark:border-t-white"></div>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Loading PDF...</p>
               </div>
@@ -763,11 +763,11 @@ export function PDFViewerSidebar({
           )}
 
           {pdfError && (
-            <div className="absolute inset-0 flex items-center justify-center bg-red-50/80 dark:bg-red-950/20 z-20">
-              <div className="text-center space-y-3 p-4 bg-white dark:bg-slate-900 rounded-lg border border-red-200 dark:border-red-900">
-                <AlertCircle className="h-10 w-10 text-red-600 dark:text-red-400 mx-auto" />
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100/80 dark:bg-gray-900/20 z-20">
+              <div className="text-center space-y-3 p-4 bg-card rounded-lg border border-gray-300 dark:border-gray-700">
+                <AlertCircle className="h-10 w-10 text-gray-900 dark:text-white mx-auto" />
                 <div>
-                  <p className="text-sm font-medium text-red-600 dark:text-red-400">Failed to load PDF</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">Failed to load PDF</p>
                   <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                     {pdfUrl || "No URL provided"}
                   </p>
@@ -779,7 +779,7 @@ export function PDFViewerSidebar({
                     setPdfError(false)
                     setPdfLoading(true)
                   }}
-                  className="border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950"
+                  className="border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
                 >
                   Retry
                 </Button>

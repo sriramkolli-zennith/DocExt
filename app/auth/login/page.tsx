@@ -83,7 +83,7 @@ export default function LoginPage() {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="password" className="text-gray-900 dark:text-white">Password</Label>
-            <Link href="/auth/forgot-password" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+            <Link href="/auth/forgot-password" className="text-sm text-gray-900 dark:text-white hover:underline">
               Forgot password?
             </Link>
           </div>
@@ -106,7 +106,7 @@ export default function LoginPage() {
             </button>
           </div>
         </div>
-        <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white disabled:opacity-60" disabled={isLoading}>
+        <Button type="submit" className="w-full bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black disabled:opacity-60" disabled={isLoading}>
           {isLoading ? "Signing in..." : "Sign In"}
         </Button>
       </form>
