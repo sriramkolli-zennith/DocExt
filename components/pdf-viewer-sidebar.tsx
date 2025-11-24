@@ -429,36 +429,27 @@ export function PDFViewerSidebar({
       {/* Overlay - click to close on mobile */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/40 dark:bg-black/60 z-30 lg:hidden"
+          className="fixed inset-0 bg-black/40 dark:bg-black/60 z-[60] lg:hidden"
           onClick={onClose}
         />
       )}
 
       {/* Sidebar */}
       <div
-        className={`fixed top-0 right-0 h-screen bg-white dark:bg-slate-900 border-l border-gray-300 dark:border-slate-700 shadow-2xl z-40 transition-all duration-300 ease-out ${
+        className={`fixed top-0 right-0 h-screen bg-white dark:bg-slate-900 border-l border-gray-300 dark:border-slate-700 shadow-2xl z-[70] transition-all duration-300 ease-out ${
           isOpen ? "w-full lg:w-1/2" : "w-0"
         } overflow-hidden flex flex-col`}
       >
         {/* Header with Close Button */}
-        <div className="border-b border-gray-300 dark:border-slate-700 px-4 sm:px-6 py-4 flex items-center justify-between bg-white dark:bg-slate-800 sticky top-0 z-50 shrink-0">
-          <div className="flex-1 min-w-0 pr-4">
+        <div className="border-b border-gray-300 dark:border-slate-700 px-4 sm:px-6 py-4 flex items-center justify-between bg-white dark:bg-slate-800 sticky top-0 z-[80] shrink-0">
+          <div className="flex-1 min-w-0">
             <h3 className="font-bold text-base sm:text-lg truncate text-gray-900 dark:text-white">{fieldName}</h3>
             <p className="text-xs text-gray-600 dark:text-gray-400 truncate mt-1">{fieldValue}</p>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="shrink-0 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 dark:hover:text-red-400 h-9 w-9 rounded-full"
-            title="Close (ESC)"
-          >
-            <X className="h-5 w-5" />
-          </Button>
         </div>
 
         {/* Controls Bar */}
-        <div className="border-b border-gray-300 dark:border-slate-700 px-4 sm:px-6 py-3 flex items-center justify-between bg-gray-50 dark:bg-slate-800 sticky top-[72px] z-40 shrink-0">
+        <div className="border-b border-gray-300 dark:border-slate-700 px-4 sm:px-6 py-3 flex items-center justify-between bg-gray-50 dark:bg-slate-800 sticky top-[72px] z-[75] shrink-0">
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -492,6 +483,15 @@ export function PDFViewerSidebar({
             <span className={`text-xs font-semibold px-2 py-1 rounded transition-colors ${matchBadgeClass}`}>
               {matchBadgeText}
             </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="shrink-0 h-8 w-8 rounded-full border-2 border-black dark:border-white bg-gray-100 dark:bg-slate-700 hover:bg-red-100 dark:hover:bg-red-900 hover:border-red-600 dark:hover:border-red-400 ml-2"
+              title="Close (ESC)"
+            >
+              <X className="h-5 w-5 text-black dark:text-white font-bold stroke-[3]" />
+            </Button>
           </div>
         </div>
 
