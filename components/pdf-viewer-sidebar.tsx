@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { X, AlertCircle, ZoomIn, ZoomOut, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Document, Page, pdfjs } from "react-pdf"
@@ -65,6 +65,55 @@ export function PDFViewerSidebar({
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const pageDimensionsRef = useRef<Map<number, { width: number; height: number }>>(new Map())
   const latestBoundingBoxRef = useRef<number[] | undefined>(undefined)
+  const autoCloseTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const [countdown, setCountdown] = useState<number>(10)
+
+  // Function to start auto-close timer after scroll completes
+  const startAutoCloseTimer = useCallback(() => {
+    // Reset countdown
+    setCountdown(10)
+    
+    // Clear any existing timers
+    if (autoCloseTimerRef.current) {
+      clearTimeout(autoCloseTimerRef.current)
+    }
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current)
+    }
+    
+    console.log('⏱️ Starting 10-second auto-close timer')
+    
+    // Update countdown every second
+    countdownIntervalRef.current = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          if (countdownIntervalRef.current) {
+            clearInterval(countdownIntervalRef.current)
+          }
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+    
+    // Set timer to auto-close after 10 seconds
+    autoCloseTimerRef.current = setTimeout(() => {
+      onClose()
+    }, 10000)
+  }, [onClose])
+
+  // Cleanup timers when sidebar closes
+  useEffect(() => {
+    if (!isOpen) {
+      if (autoCloseTimerRef.current) {
+        clearTimeout(autoCloseTimerRef.current)
+      }
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current)
+      }
+    }
+  }, [isOpen])
 
   // Handle escape key to close
   useEffect(() => {
@@ -81,14 +130,175 @@ export function PDFViewerSidebar({
   useEffect(() => {
     if (isOpen && pageNumber && pageNumber > 0) {
       setCurrentPage(pageNumber)
-      // Delay scroll to ensure page is rendered
-      setTimeout(() => {
-        scrollToPage(pageNumber)
-      }, 800)
+      // Delay scroll to ensure page is rendered and dimensions are captured
+      const timer = setTimeout(() => {
+        const pageElement = pageRefs.current.get(pageNumber)
+        const container = scrollContainerRef.current
+        
+        console.log(`🔍 Checking dimensions for page ${pageNumber}:`, {
+          hasPageElement: !!pageElement,
+          hasContainer: !!container,
+          hasBoundingBox: !!boundingBox,
+          bboxLength: boundingBox?.length,
+          dimensionsMapSize: pageDimensionsRef.current.size,
+          dimensionsKeys: JSON.stringify(Array.from(pageDimensionsRef.current.keys())),
+          requestedPage: pageNumber,
+          requestedPageType: typeof pageNumber
+        })
+        
+        if (pageElement && container && boundingBox && boundingBox.length >= 8) {
+          const pageDimensions = pageDimensionsRef.current.get(pageNumber)
+          console.log(`🔍 Direct lookup result:`, {
+            pageNumber,
+            found: !!pageDimensions,
+            dimensions: pageDimensions ? `${pageDimensions.width}x${pageDimensions.height}` : 'undefined'
+          })
+          if (!pageDimensions) {
+            console.log(`⚠️ Page ${pageNumber} dimensions not ready, retrying...`)
+            // Retry after another delay
+            setTimeout(() => {
+              const retryDimensions = pageDimensionsRef.current.get(pageNumber)
+              console.log(`🔍 Retry check:`, {
+                pageNumber,
+                found: !!retryDimensions,
+                dimensions: retryDimensions ? `${retryDimensions.width}x${retryDimensions.height}` : 'undefined',
+                mapSize: pageDimensionsRef.current.size,
+                mapKeys: JSON.stringify(Array.from(pageDimensionsRef.current.keys()))
+              })
+              if (retryDimensions) {
+                console.log(`✅ Page ${pageNumber} dimensions ready on retry:`, retryDimensions)
+                
+                // Perform the scroll with retry dimensions
+                const width = pageElement.clientWidth
+                const height = pageElement.clientHeight
+                const scaleX = width / retryDimensions.width
+                const scaleY = height / retryDimensions.height
+
+                const POINTS_PER_INCH = 72
+                const isNormalized = boundingBox[0] <= 1 && boundingBox[1] <= 1
+
+                let centerX = 0
+                let centerY = 0
+                const numPoints = boundingBox.length / 2
+
+                for (let i = 0; i < boundingBox.length; i += 2) {
+                  let xInPoints, yInPoints
+                  
+                  if (isNormalized) {
+                    xInPoints = boundingBox[i] * retryDimensions.width
+                    yInPoints = boundingBox[i + 1] * retryDimensions.height
+                  } else {
+                    xInPoints = boundingBox[i] * POINTS_PER_INCH
+                    yInPoints = boundingBox[i + 1] * POINTS_PER_INCH
+                  }
+                  
+                  const yFromTop = retryDimensions.height - yInPoints
+                  centerX += xInPoints * scaleX
+                  centerY += yFromTop * scaleY
+                }
+                centerX /= numPoints
+                centerY /= numPoints
+
+                const pageRect = pageElement.getBoundingClientRect()
+                const containerRect = container.getBoundingClientRect()
+                const relativeTop = pageRect.top - containerRect.top + container.scrollTop
+                const scrollTarget = relativeTop + centerY - (containerRect.height / 2)
+
+                console.log(`📍 Scrolling to page ${pageNumber} (retry): target ${scrollTarget.toFixed(0)}px`)
+
+                container.scrollTo({
+                  top: Math.max(0, scrollTarget),
+                  behavior: 'smooth'
+                })
+                
+                setTimeout(() => {
+                  startAutoCloseTimer()
+                }, 1000)
+              } else {
+                console.log(`❌ Page ${pageNumber} dimensions still not ready, using fallback`)
+                pageElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                
+                setTimeout(() => {
+                  startAutoCloseTimer()
+                }, 1000)
+              }
+            }, 1000)
+            return
+          }
+
+          const width = pageElement.clientWidth
+          const height = pageElement.clientHeight
+          const scaleX = width / pageDimensions.width
+          const scaleY = height / pageDimensions.height
+
+          console.log(`📐 Page ${pageNumber} layout:`, {
+            pageDimensions,
+            viewport: { width, height },
+            scale: { x: scaleX.toFixed(3), y: scaleY.toFixed(3) }
+          })
+
+          // Detect if coordinates are normalized (0-1) or in inches
+          const POINTS_PER_INCH = 72
+          const isNormalized = boundingBox[0] <= 1 && boundingBox[1] <= 1
+
+          let centerX = 0
+          let centerY = 0
+          const numPoints = boundingBox.length / 2
+
+          for (let i = 0; i < boundingBox.length; i += 2) {
+            let xInPoints, yInPoints
+            
+            if (isNormalized) {
+              xInPoints = boundingBox[i] * pageDimensions.width
+              yInPoints = boundingBox[i + 1] * pageDimensions.height
+            } else {
+              xInPoints = boundingBox[i] * POINTS_PER_INCH
+              yInPoints = boundingBox[i + 1] * POINTS_PER_INCH
+            }
+            
+            // Convert Y from bottom to top BEFORE scaling
+            const yFromTop = pageDimensions.height - yInPoints
+            
+            centerX += xInPoints * scaleX
+            centerY += yFromTop * scaleY  // Use distance from top
+          }
+          centerX /= numPoints
+          centerY /= numPoints
+
+          console.log(`📍 Scroll calculation: Field center at [${centerX.toFixed(0)}, ${centerY.toFixed(0)}]px from top-left, viewport: ${width}x${height}px`)
+
+          const pageRect = pageElement.getBoundingClientRect()
+          const containerRect = container.getBoundingClientRect()
+          const relativeTop = pageRect.top - containerRect.top + container.scrollTop
+          const scrollTarget = relativeTop + centerY - (containerRect.height / 2)
+
+          console.log(`📍 Scrolling to page ${pageNumber}: target scroll ${scrollTarget.toFixed(0)}px`)
+
+          container.scrollTo({
+            top: Math.max(0, scrollTarget),
+            behavior: 'smooth'
+          })
+          
+          // Start auto-close timer after scroll completes
+          setTimeout(() => {
+            startAutoCloseTimer()
+          }, 1000) // Wait 1 second after scroll starts for smooth scroll to complete
+        } else if (pageElement && container) {
+          pageElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          
+          // Start auto-close timer for fallback scroll too
+          setTimeout(() => {
+            startAutoCloseTimer()
+          }, 1000)
+        }
+      }, 2000) // Increased delay to ensure page dimensions are captured
+      
+      return () => clearTimeout(timer)
     }
-  }, [isOpen, pageNumber])
+  }, [isOpen, pageNumber, boundingBox, startAutoCloseTimer])
 
   useEffect(() => {
+    console.log('🧹 Clearing dimensions and canvas (pdfUrl changed)')
     pageDimensionsRef.current.clear()
     canvasRefs.current.forEach((canvas) => {
       const ctx = canvas.getContext("2d")
@@ -100,21 +310,37 @@ export function PDFViewerSidebar({
     setPdfError(false)
   }, [pdfUrl])
 
-  // Draw annotation when bounding box and page are available
+  // Main effect to handle annotation drawing after scroll completes
   useEffect(() => {
     if (boundingBox && pageNumber && isOpen && !pdfLoading && !pdfError) {
       latestBoundingBoxRef.current = boundingBox
-      clearAllCanvases()
-      const redrawTimeout = setTimeout(() => {
+      
+      // Wait for scroll to complete, then draw annotation
+      const drawTimeout = setTimeout(() => {
         drawAnnotation(pageNumber, boundingBox)
-      }, 250)
+        
+        // Redraw again after a bit to ensure it stays
+        setTimeout(() => {
+          drawAnnotation(pageNumber, boundingBox)
+        }, 500)
+      }, 2400) // Wait for scroll to complete (400ms after scroll starts at 2000ms)
 
+      return () => clearTimeout(drawTimeout)
+    }
+    if (!boundingBox && isOpen) {
+      clearAllCanvases()
+    }
+  }, [boundingBox, pageNumber, isOpen, pdfLoading, pdfError])
+
+  // Redraw annotation when scale changes
+  useEffect(() => {
+    if (boundingBox && pageNumber && isOpen && !pdfLoading && latestBoundingBoxRef.current) {
+      const redrawTimeout = setTimeout(() => {
+        drawAnnotation(pageNumber, latestBoundingBoxRef.current!)
+      }, 300)
       return () => clearTimeout(redrawTimeout)
     }
-    if (!boundingBox) {
-      clearAllCanvases()
-    }
-  }, [boundingBox, pageNumber, isOpen, pdfLoading, pdfError, scale])
+  }, [scale])
 
   useEffect(() => {
     latestBoundingBoxRef.current = boundingBox
@@ -265,12 +491,54 @@ export function PDFViewerSidebar({
     }
   }, [isOpen, pdfUrl, fieldValue, pdfLoading, pdfError, numPages])
 
-  const scrollToPage = (page: number) => {
+  const scrollToPage = useCallback((page: number) => {
     const pageElement = pageRefs.current.get(page)
-    if (pageElement && scrollContainerRef.current) {
+    const container = scrollContainerRef.current
+    
+    if (pageElement && container && boundingBox && boundingBox.length >= 8) {
+      // Calculate the center position of the bounding box
+      const pageDimensions = pageDimensionsRef.current.get(page)
+      if (!pageDimensions) {
+        // Fallback to simple center scroll if dimensions not available
+        pageElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        return
+      }
+
+      const width = pageElement.clientWidth
+      const height = pageElement.clientHeight
+      const scaleX = width / pageDimensions.width
+      const scaleY = height / pageDimensions.height
+
+      // Calculate bounding box center in viewport coordinates
+      let centerX = 0
+      let centerY = 0
+      const numPoints = boundingBox.length / 2
+
+      for (let i = 0; i < boundingBox.length; i += 2) {
+        centerX += boundingBox[i] * scaleX
+        centerY += boundingBox[i + 1] * scaleY
+      }
+      centerX /= numPoints
+      centerY /= numPoints
+
+      // Get page position relative to container
+      const pageRect = pageElement.getBoundingClientRect()
+      const containerRect = container.getBoundingClientRect()
+      
+      // Calculate scroll position to center the bounding box
+      const relativeTop = pageRect.top - containerRect.top + container.scrollTop
+      const scrollTarget = relativeTop + centerY - (containerRect.height / 2)
+
+      // Smooth scroll to center the field
+      container.scrollTo({
+        top: Math.max(0, scrollTarget),
+        behavior: 'smooth'
+      })
+    } else if (pageElement && container) {
+      // Fallback if no bounding box
       pageElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
-  }
+  }, [boundingBox])
 
   const clearAllCanvases = () => {
     canvasRefs.current.forEach((canvas) => {
@@ -317,58 +585,130 @@ export function PDFViewerSidebar({
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     ctx.scale(dpr, dpr)
 
+    // Auto-detect coordinate format and convert
+    const POINTS_PER_INCH = 72
+    const isNormalized = bbox[0] <= 1 && bbox[1] <= 1
+    
     const scaleX = width / pageDimensions.width
     const scaleY = height / pageDimensions.height
 
+    console.log(`🎨 Drawing on page ${page}:`, {
+      bbox: bbox.slice(0, 8),
+      format: isNormalized ? 'normalized' : 'inches',
+      pageDimensions,
+      viewport: { width, height },
+      scale: { scaleX: scaleX.toFixed(3), scaleY: scaleY.toFixed(3) }
+    })
+    console.log(`📐 Y-axis conversion: Azure Y from bottom → PDF points from bottom → PDF points from top → Viewport pixels from top`)
+
     const points: Array<{ x: number; y: number }> = []
-    let outOfBounds = 0
 
     for (let i = 0; i < bbox.length; i += 2) {
-      const x = bbox[i] * scaleX
-      const y = bbox[i + 1] * scaleY
-
-      if (y < -1 || y > height + 1) {
-        outOfBounds += 1
+      let xInPoints, yInPoints
+      
+      if (isNormalized) {
+        xInPoints = bbox[i] * pageDimensions.width
+        yInPoints = bbox[i + 1] * pageDimensions.height
+      } else {
+        // Azure coordinates are in inches from bottom-left
+        xInPoints = bbox[i] * POINTS_PER_INCH
+        yInPoints = bbox[i + 1] * POINTS_PER_INCH
       }
+      
+      // Convert Y from bottom-relative to top-relative BEFORE scaling
+      const yFromTop = pageDimensions.height - yInPoints
+      
+      // Scale to viewport size
+      const x = xInPoints * scaleX
+      const y = yFromTop * scaleY  // Now using distance from top
 
       points.push({ x, y })
-    }
-
-    if (outOfBounds >= points.length / 2) {
-      points.length = 0
-      for (let i = 0; i < bbox.length; i += 2) {
-        const x = bbox[i] * scaleX
-        const flippedY = height - bbox[i + 1] * scaleY
-        points.push({ x, y: flippedY })
+      
+      // Log first point for debugging
+      if (i === 0) {
+        console.log(`  First point: [${bbox[i]}, ${bbox[i+1]}] inches → [${xInPoints.toFixed(1)}, ${yInPoints.toFixed(1)}] points from bottom → [${yFromTop.toFixed(1)}] points from top → [${x.toFixed(1)}, ${y.toFixed(1)}] pixels`)
       }
     }
 
     if (points.length === 0) return
 
-    ctx.beginPath()
-    points.forEach((point, index) => {
-      if (index === 0) ctx.moveTo(point.x, point.y)
-      else ctx.lineTo(point.x, point.y)
-    })
-    ctx.closePath()
+    // Draw static annotation first
+    const drawStatic = () => {
+      ctx.save()
+      ctx.setTransform(1, 0, 0, 1, 0, 0)
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      ctx.scale(dpr, dpr)
+      
+      ctx.beginPath()
+      points.forEach((point, index) => {
+        if (index === 0) ctx.moveTo(point.x, point.y)
+        else ctx.lineTo(point.x, point.y)
+      })
+      ctx.closePath()
 
-    let stroke = "rgba(59, 130, 246, 0.85)"
-    let fill = "rgba(59, 130, 246, 0.18)"
-
-    if (confidence && confidence > 0.8) {
-      stroke = "rgba(34, 197, 94, 0.9)"
-      fill = "rgba(34, 197, 94, 0.22)"
-    } else if (confidence && confidence > 0.6) {
-      stroke = "rgba(234, 179, 8, 0.9)"
-      fill = "rgba(234, 179, 8, 0.22)"
+      // Use red color for highlighting
+      ctx.strokeStyle = "rgba(239, 68, 68, 0.95)"
+      ctx.fillStyle = "rgba(239, 68, 68, 0.25)"
+      ctx.lineWidth = 3
+      ctx.lineJoin = "round"
+      ctx.fill()
+      ctx.stroke()
+      ctx.restore()
     }
 
-    ctx.lineWidth = 2.5
-    ctx.lineJoin = "round"
-    ctx.strokeStyle = stroke
-    ctx.fillStyle = fill
-    ctx.fill()
-    ctx.stroke()
+    drawStatic()
+
+    // Add a pulsing animation effect (only for first 2 seconds)
+    let pulseOpacity = 1
+    let pulseDirection = -1
+    let frameCount = 0
+    const maxFrames = 120 // 2 seconds at 60fps
+
+    const animatePulse = () => {
+      if (frameCount >= maxFrames) {
+        // After animation, ensure static version remains
+        drawStatic()
+        return
+      }
+
+      pulseOpacity += pulseDirection * 0.02
+      if (pulseOpacity <= 0.5) {
+        pulseDirection = 1
+      } else if (pulseOpacity >= 1) {
+        pulseDirection = -1
+      }
+
+      ctx.save()
+      ctx.setTransform(1, 0, 0, 1, 0, 0)
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      ctx.scale(dpr, dpr)
+      
+      ctx.beginPath()
+      points.forEach((point, index) => {
+        if (index === 0) ctx.moveTo(point.x, point.y)
+        else ctx.lineTo(point.x, point.y)
+      })
+      ctx.closePath()
+
+      ctx.strokeStyle = `rgba(239, 68, 68, ${pulseOpacity})`
+      ctx.fillStyle = `rgba(239, 68, 68, ${pulseOpacity * 0.3})`
+      ctx.lineWidth = 3
+      ctx.lineJoin = "round"
+      ctx.fill()
+      ctx.stroke()
+      ctx.restore()
+
+      frameCount++
+      if (frameCount < maxFrames) {
+        requestAnimationFrame(animatePulse)
+      } else {
+        // Ensure static annotation remains after animation
+        drawStatic()
+      }
+    }
+
+    // Start pulse animation after a short delay
+    setTimeout(() => animatePulse(), 200)
   }
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
@@ -483,6 +823,11 @@ export function PDFViewerSidebar({
             <span className={`text-xs font-semibold px-2 py-1 rounded transition-colors ${matchBadgeClass}`}>
               {matchBadgeText}
             </span>
+            {countdown > 0 && boundingBox && (
+              <span className="text-xs font-semibold px-2 py-1 rounded bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300 animate-pulse">
+                Auto-close in {countdown}s
+              </span>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -574,6 +919,7 @@ export function PDFViewerSidebar({
                             width: viewport.width,
                             height: viewport.height,
                           })
+                          console.log(`✅ Page ${page} dimensions captured:`, { width: viewport.width, height: viewport.height })
 
                           if (page === pageNumber && latestBoundingBoxRef.current) {
                             requestAnimationFrame(() => drawAnnotation(page, latestBoundingBoxRef.current!))

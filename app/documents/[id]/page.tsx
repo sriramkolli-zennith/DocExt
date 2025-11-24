@@ -4,11 +4,9 @@ import { useEffect, useState } from "react"
 import { createClient } from "@/lib/client"
 import { useSessionManager } from "@/lib/useSessionManager"
 import { SessionWarningModal } from "@/components/session-warning-modal"
-import { PDFViewerSidebar } from "@/components/pdf-viewer-sidebar"
+import dynamic from "next/dynamic"
 import { getExtractedData, processDocument } from "@/lib/edge-functions"
 import { Button } from "@/components/ui/button"
-
-export const dynamic = "force-dynamic"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
@@ -16,6 +14,15 @@ import { useRouter, useParams } from "next/navigation"
 import { ArrowLeft, Plus, Eye, Trash2, Download, RotateCcw } from "lucide-react"
 import Navbar from "@/components/navbar"
 import FieldValidationModal from "@/components/field-validation-modal"
+
+// Force dynamic rendering
+export const dynamicParams = true
+
+// Dynamically import PDFViewerSidebar with no SSR
+const PDFViewerSidebar = dynamic(
+  () => import("@/components/pdf-viewer-sidebar").then((mod) => ({ default: mod.PDFViewerSidebar })),
+  { ssr: false }
+)
 
 interface BoundingRegion {
   pageNumber: number

@@ -312,18 +312,27 @@ Deno.serve(async (req) => {
           if (azureField?.boundingRegions && azureField.boundingRegions.length > 0) {
             const firstRegion = azureField.boundingRegions[0]
             pageNumber = firstRegion.pageNumber
-            boundingBox = firstRegion.polygon || firstRegion.boundingBox
+            const rawPolygon = firstRegion.polygon || firstRegion.boundingBox
+            
+            // Check if we need to flatten from object array to number array
+            if (rawPolygon && typeof rawPolygon[0] === 'object' && rawPolygon[0].x !== undefined) {
+              // Convert [{x, y}, ...] to [x, y, ...]
+              boundingBox = []
+              for (const point of rawPolygon) {
+                boundingBox.push(point.x, point.y)
+              }
+            } else {
+              // Already flat array
+              boundingBox = rawPolygon
+            }
           }
           
           console.log(`  "${field.name}" → ${matchedFieldName ? `"${matchedFieldName}" ✅ (${matchType})` : 'Not found ❌'}`)
-          if (matchedFieldName && matchedFieldName !== field.name) {
-            console.log(`    ℹ️  Matched using ${matchType} matching: "${field.name}" → "${matchedFieldName}"`)
-          }
           if (value !== null) {
-            console.log(`    📝 Value: "${value}" (confidence: ${confidence})`)
+            console.log(`    📝 Value: "${value}" (confidence: ${confidence ? (confidence * 100).toFixed(1) + '%' : 'N/A'})`)
           }
           if (pageNumber && boundingBox) {
-            console.log(`    📍 Location: Page ${pageNumber}, Bounding box: [${boundingBox.slice(0, 8).join(', ')}${boundingBox.length > 8 ? '...' : ''}]`)
+            console.log(`    📍 Page ${pageNumber} | Raw Azure coords: [${boundingBox.slice(0, 8).join(', ')}${boundingBox.length > 8 ? '...' : ''}]`)
           }
           
           return {
