@@ -12,7 +12,9 @@ interface ProcessRequest {
   documentName: string
   filePath: string
   publicUrl: string
-  fieldsToExtract: (string | FieldToExtract)[]
+  originalFileName?: string
+  fileHash?: string
+  fieldsToExtract: FieldToExtract[]
 }
 
 Deno.serve(async (req) => {
@@ -53,13 +55,18 @@ Deno.serve(async (req) => {
 
     console.log("✅ User authenticated:", user.id)
 
-    const { documentId, documentName, filePath, publicUrl, fieldsToExtract }: ProcessRequest = await req.json()
+    const { documentId, documentName, filePath, publicUrl, originalFileName, fileHash, fieldsToExtract }: ProcessRequest = await req.json()
+
+    const normalizedOriginalFileName = originalFileName || (filePath ? filePath.split("/").pop() ?? null : null)
+    let normalizedFileHash = fileHash ? fileHash.trim().toLowerCase() : null
 
     console.log("📥 Request payload:")
     console.log("  - Document ID:", documentId || "New document")
     console.log("  - Document Name:", documentName)
     console.log("  - File Path:", filePath)
     console.log("  - Public URL:", publicUrl)
+    console.log("  - Original Filename:", normalizedOriginalFileName || "Not provided")
+    console.log("  - File Hash:", normalizedFileHash || "Not provided")
     console.log("  - Fields to Extract:", JSON.stringify(fieldsToExtract, null, 2))
 
     if (!filePath || !publicUrl || !fieldsToExtract || fieldsToExtract.length === 0) {
@@ -68,6 +75,24 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: "Missing required fields" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       )
+    }
+
+    if (!normalizedFileHash) {
+      try {
+        console.log("⚠️ File hash not provided. Attempting to compute from public URL...")
+        const fileResponse = await fetch(publicUrl)
+        if (!fileResponse.ok) {
+          throw new Error(`Failed to fetch file for hashing: ${fileResponse.status}`)
+        }
+        const fileBuffer = await fileResponse.arrayBuffer()
+        const hashBuffer = await crypto.subtle.digest("SHA-256", fileBuffer)
+        normalizedFileHash = Array.from(new Uint8Array(hashBuffer))
+          .map((byte) => byte.toString(16).padStart(2, "0"))
+          .join("")
+        console.log("✅ Computed file hash from public URL")
+      } catch (hashError) {
+        console.warn("⚠️ Unable to compute file hash from public URL:", hashError)
+      }
     }
 
     // Normalize fields to objects
@@ -82,6 +107,31 @@ Deno.serve(async (req) => {
       console.log(`  ${idx + 1}. Name: "${field.name}", Type: "${field.type}", Description: "${field.description}"`)
     })
 
+    if (normalizedFileHash) {
+      const { data: existingDoc, error: duplicateError } = await supabaseClient
+        .from("documents")
+        .select("id, name")
+        .eq("user_id", user.id)
+        .eq("file_hash", normalizedFileHash)
+        .maybeSingle()
+
+      if (duplicateError && duplicateError.code !== "PGRST116") {
+        console.error("Error checking hash duplicates:", duplicateError)
+      }
+
+      if (existingDoc && (!documentId || existingDoc.id !== documentId)) {
+        console.warn("Duplicate document upload detected", existingDoc.id)
+        return new Response(
+          JSON.stringify({
+            error: "Document already uploaded",
+            documentId: existingDoc.id,
+            documentName: existingDoc.name,
+          }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        )
+      }
+    }
+
     let docId = documentId
     if (!docId) {
       console.log("📝 Creating new document record...")
@@ -91,6 +141,8 @@ Deno.serve(async (req) => {
           user_id: user.id,
           name: documentName || "Untitled Document",
           storage_path: filePath,
+          original_filename: normalizedOriginalFileName,
+          file_hash: normalizedFileHash,
           status: "processing",
         })
         .select()
@@ -124,7 +176,14 @@ Deno.serve(async (req) => {
       }
     } else {
       console.log("📝 Updating existing document:", docId)
-      await supabaseClient.from("documents").update({ status: "processing" }).eq("id", docId)
+      const updatePayload: Record<string, unknown> = { status: "processing" }
+      if (normalizedOriginalFileName) {
+        updatePayload["original_filename"] = normalizedOriginalFileName
+      }
+      if (normalizedFileHash) {
+        updatePayload["file_hash"] = normalizedFileHash
+      }
+      await supabaseClient.from("documents").update(updatePayload).eq("id", docId)
       console.log("✅ Document status updated to 'processing'")
     }
 

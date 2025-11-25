@@ -101,6 +101,7 @@ Deno.serve(async (req) => {
           id: document.id,
           name: document.name,
           storagePath: document.storage_path,
+          originalFilename: document.original_filename,
           status: document.status,
           createdAt: document.created_at,
           processedAt: document.processed_at,

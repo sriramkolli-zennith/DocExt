@@ -1,7 +1,6 @@
 -- ================================================================
--- DOCEXT - DATABASE SETUP & CONFIGURATION
--- Complete SQL schema for DocExtract application
--- Run this in Supabase SQL Editor
+-- DOCEXT - COMPLETE DATABASE SETUP (FRESH INSTALL)
+-- Run this after RESET_DATABASE.sql to set up everything from scratch
 -- ================================================================
 
 -- ================================================================
@@ -28,13 +27,15 @@ CREATE POLICY "profiles_update_own" ON public.profiles
   FOR UPDATE USING (auth.uid() = id);
 
 -- ================================================================
--- SECTION 2: DOCUMENTS TABLE
+-- SECTION 2: DOCUMENTS TABLE (with original_filename column)
 -- ================================================================
 CREATE TABLE IF NOT EXISTS public.documents (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES auth.users ON DELETE CASCADE,
   name text NOT NULL,
   storage_path text NOT NULL,
+  original_filename text,
+  file_hash text,
   status text DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
   created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
   processed_at timestamp with time zone
@@ -53,6 +54,15 @@ CREATE POLICY "documents_update_own" ON public.documents
 
 CREATE POLICY "documents_delete_own" ON public.documents 
   FOR DELETE USING (auth.uid() = user_id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS documents_user_hash_unique 
+ON public.documents(user_id, file_hash) 
+WHERE file_hash IS NOT NULL;
+
+-- Create index for faster duplicate lookups
+CREATE INDEX IF NOT EXISTS idx_documents_original_filename 
+ON public.documents(user_id, original_filename) 
+WHERE original_filename IS NOT NULL;
 
 -- ================================================================
 -- SECTION 3: DOCUMENT_FIELDS TABLE
@@ -253,13 +263,6 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES ('documents', 'documents', true)
 ON CONFLICT (id) DO UPDATE SET public = true;
 
--- Drop existing storage policies if any
-DROP POLICY IF EXISTS "users_upload_own" ON storage.objects;
-DROP POLICY IF EXISTS "users_view_own" ON storage.objects;
-DROP POLICY IF EXISTS "users_update_own" ON storage.objects;
-DROP POLICY IF EXISTS "users_delete_own" ON storage.objects;
-DROP POLICY IF EXISTS "public_read_for_processing" ON storage.objects;
-
 -- Storage policies
 CREATE POLICY "users_upload_own" ON storage.objects
   FOR INSERT WITH CHECK (
@@ -279,8 +282,14 @@ CREATE POLICY "users_update_own" ON storage.objects
     AND auth.uid()::text = (storage.foldername(name))[1]
   );
 
+CREATE POLICY "users_delete_own" ON storage.objects
+  FOR DELETE USING (
+    bucket_id = 'documents' 
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+
 -- ================================================================
--- SECTION 7: STORAGE BUCKET (Documents)
+-- SECTION 7: BACKFILL PROFILES FOR EXISTING USERS
 -- ================================================================
 
 INSERT INTO public.profiles (id, username, full_name, avatar_url)
@@ -302,4 +311,5 @@ SELECT
   (SELECT COUNT(*) FROM public.profiles) as profiles_count,
   (SELECT COUNT(*) FROM public.documents) as documents_count,
   (SELECT COUNT(*) FROM public.document_fields) as fields_count,
-  (SELECT COUNT(*) FROM public.extracted_data) as data_count;
+  (SELECT COUNT(*) FROM public.extracted_data) as data_count,
+  (SELECT COUNT(*) FROM storage.buckets WHERE id = 'documents') as storage_bucket_exists;

@@ -112,6 +112,7 @@ Deno.serve(async (req) => {
         uploadUrl: signedUrlData.signedUrl,
         filePath,
         publicUrl,
+        originalFileName: fileName,
         token: signedUrlData.token,
       }),
       {

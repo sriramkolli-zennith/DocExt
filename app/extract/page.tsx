@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Upload, Plus, X, Loader2, FileText, Sparkles, ChevronDown, ChevronUp } from "lucide-react"
 import { extractionNameSchema, fieldExtractionSchema } from "@/lib/validations"
+import { computeFileHash } from "@/lib/utils"
 
 import { useRouter } from "next/navigation"
 import Navbar from "@/components/navbar"
@@ -21,6 +22,11 @@ interface FieldToExtract {
   id: string
   name: string
   type: string
+}
+
+interface PendingUploadFile {
+  file: File
+  hash: string
 }
 
 const FIELD_TYPES = [
@@ -55,7 +61,7 @@ const COMMON_INVOICE_FIELDS = [
 
 export default function ExtractPage() {
   const [documentName, setDocumentName] = useState("")
-  const [files, setFiles] = useState<File[]>([])
+  const [files, setFiles] = useState<PendingUploadFile[]>([])
   const [fields, setFields] = useState<FieldToExtract[]>([])
   const [newField, setNewField] = useState("")
   const [newFieldType, setNewFieldType] = useState("text")
@@ -67,9 +73,11 @@ export default function ExtractPage() {
   const [showDuplicateModal, setShowDuplicateModal] = useState(false)
   const [duplicateInfo, setDuplicateInfo] = useState<{
     file: File
+    hash: string
     documentId: string
     documentName: string
   } | null>(null)
+  const [duplicateContext, setDuplicateContext] = useState<"upload-continue" | "process" | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
   
@@ -91,7 +99,7 @@ export default function ExtractPage() {
     setStep("upload")
   }
 
-  const handleFileSelect = (newFiles: FileList | null) => {
+  const handleFileSelect = async (newFiles: FileList | null) => {
     if (!newFiles) return
     
     const maxSize = 50 * 1024 * 1024 // 50MB
@@ -103,55 +111,58 @@ export default function ExtractPage() {
       return true
     })
     
-    // Check for duplicates before adding files
-    checkFilesForDuplicates(validFiles)
+    await addFilesWithHashes(validFiles)
   }
 
-  const checkFilesForDuplicates = async (newFiles: File[]) => {
+  const addFilesWithHashes = async (newFiles: File[]) => {
     try {
-      for (const file of newFiles) {
-        console.log('Checking for duplicate:', file.name)
-        const duplicateCheck = await checkDuplicateDocument(file.name)
-        console.log('Duplicate check result:', duplicateCheck)
-        
-        if (duplicateCheck.exists && duplicateCheck.document) {
-          // Show duplicate modal for the first duplicate found
-          console.log('Duplicate found! Showing modal...')
-          setDuplicateInfo({
-            file,
-            documentId: duplicateCheck.document.id,
-            documentName: duplicateCheck.document.name,
-          })
-          setShowDuplicateModal(true)
-          return // Stop processing after finding first duplicate
-        }
-      }
-      
-      // If no duplicates, add all files
-      console.log('No duplicates found, adding files')
-      setFiles([...files, ...newFiles])
+      const preparedFiles = await Promise.all(
+        newFiles.map(async (file) => ({ file, hash: await computeFileHash(file) }))
+      )
+      setFiles((prev) => [...prev, ...preparedFiles])
       setError(null)
-    } catch (error) {
-      console.error('Error checking duplicates:', error)
-      // If there's an error, still allow the upload
-      setFiles([...files, ...newFiles])
-      setError(null)
+    } catch (err) {
+      console.error("Failed to process selected files:", err)
+      setError("Failed to process selected files. Please try again.")
     }
+  }
+
+  const findDuplicateInQueuedFiles = async () => {
+    for (let i = 0; i < files.length; i++) {
+      const entry = files[i]
+      console.log('Checking for duplicate before continuing:', entry.file.name)
+      const duplicateCheck = await checkDuplicateDocument({ fileHash: entry.hash, fileName: entry.file.name })
+      console.log('Duplicate check result:', duplicateCheck)
+
+      if (duplicateCheck.exists && duplicateCheck.document) {
+        setDuplicateInfo({
+          file: entry.file,
+          hash: entry.hash,
+          documentId: duplicateCheck.document.id,
+          documentName: duplicateCheck.document.name,
+        })
+        setFiles((prev) => prev.filter((_, idx) => idx !== i))
+        setDuplicateContext("upload-continue")
+        setShowDuplicateModal(true)
+        return true
+      }
+    }
+    return false
   }
 
   const handleDuplicateModalClose = () => {
     setShowDuplicateModal(false)
     setDuplicateInfo(null)
+    setDuplicateContext(null)
   }
 
   const handleDuplicateContinue = () => {
-    // User chose to upload anyway
-    if (duplicateInfo) {
-      setFiles([...files, duplicateInfo.file])
-      setError(null)
+    if (duplicateContext === "upload-continue") {
+      setStep("fields")
     }
     setShowDuplicateModal(false)
     setDuplicateInfo(null)
+    setDuplicateContext(null)
   }
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -167,21 +178,25 @@ export default function ExtractPage() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragActive(false)
-    handleFileSelect(e.dataTransfer.files)
+    void handleFileSelect(e.dataTransfer.files)
   }
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleFileSelect(e.target.files)
+    void handleFileSelect(e.target.files)
   }
 
   const removeFile = (index: number) => {
-    setFiles(files.filter((_, i) => i !== index))
+    setFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
-  const handleUploadSubmit = (e: React.FormEvent) => {
+  const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (files.length === 0) {
       setError("Please upload at least one document")
+      return
+    }
+    const hasDuplicate = await findDuplicateInQueuedFiles()
+    if (hasDuplicate) {
       return
     }
     setError(null)
@@ -239,7 +254,7 @@ export default function ExtractPage() {
       let lastDocumentId: string | null = null
 
       // Process each file
-      for (const file of files) {
+      for (const { file, hash } of files) {
         // Step 1: Upload document via edge function
         const { data: uploadData, error: uploadError } = await uploadDocument(file, documentName)
 
@@ -252,10 +267,32 @@ export default function ExtractPage() {
           documentName,
           filePath: uploadData.filePath,
           publicUrl: uploadData.publicUrl,
+          originalFileName: uploadData.originalFileName,
+          fileHash: hash,
           fieldsToExtract: fields.map((f) => ({ name: f.name, type: f.type })),
         })
 
         if (processError) {
+          if (
+            processError === "Document already uploaded" &&
+            processData &&
+            "documentId" in processData &&
+            typeof processData.documentId === "string"
+          ) {
+            setDuplicateInfo({
+              file,
+              hash,
+              documentId: processData.documentId,
+              documentName:
+                ("documentName" in processData && typeof processData.documentName === "string"
+                  ? processData.documentName
+                  : documentName) || "Existing Document",
+            })
+            setDuplicateContext("process")
+            setShowDuplicateModal(true)
+            setIsLoading(false)
+            return
+          }
           throw new Error(processError)
         }
 
@@ -357,7 +394,7 @@ export default function ExtractPage() {
                   <div className="space-y-3">
                     <p className="font-semibold text-sm text-gray-900 dark:text-white">Uploaded Files ({files.length}):</p>
                     <div className="grid gap-3">
-                      {files.map((file, idx) => (
+                      {files.map(({ file }, idx) => (
                         <Card key={idx} className="relative bg-gray-50 dark:bg-slate-700 border-gray-200 dark:border-slate-600">
                           <CardContent className="p-4">
                             <div className="flex items-center gap-3">

@@ -49,6 +49,7 @@ interface Document {
   status: string
   createdAt: string
   processedAt: string | null
+  originalFilename?: string | null
 }
 
 export default function DocumentDetailPage() {
@@ -160,6 +161,7 @@ export default function DocumentDetailPage() {
         documentName: document.name,
         filePath: document.storagePath,
         publicUrl: publicUrl,
+        originalFileName: document.originalFilename || document.name,
         fieldsToExtract: [{ 
           name: newFieldName, 
           type: newFieldType, 
@@ -262,6 +264,7 @@ export default function DocumentDetailPage() {
         documentName: document.name,
         filePath: document.storagePath,
         publicUrl: publicUrl,
+        originalFileName: document.originalFilename || document.name,
         fieldsToExtract: fieldsToExtract,
       })
 
