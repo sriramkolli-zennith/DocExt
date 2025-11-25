@@ -46,36 +46,19 @@ export default function FieldValidationModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 dark:bg-black/70 flex items-center justify-center p-4">
-      <div className="bg-card rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-gray-200 dark:border-slate-700">
+      <div className="bg-white dark:bg-slate-900 rounded-lg max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-gray-200 dark:border-slate-700">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate">{field.fieldName}</h2>
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">{field.fieldName}</h2>
           <Button variant="ghost" size="sm" onClick={onClose} className="ml-2 hover:bg-gray-200 dark:hover:bg-slate-700">
             <X className="h-5 w-5 text-gray-600 dark:text-gray-400" />
           </Button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto flex flex-col lg:flex-row gap-4 sm:gap-6 p-4 sm:p-6">
-          {/* Document Preview - Left Side */}
-          <div className="lg:flex-1 flex items-center justify-center bg-gray-100 dark:bg-slate-800 rounded-lg overflow-hidden border border-gray-200 dark:border-slate-700 min-h-[300px] sm:min-h-[400px]">
-            {documentUrl.endsWith(".pdf") ? (
-              <div className="w-full h-full flex items-center justify-center p-4">
-                <p className="text-center text-gray-600 dark:text-gray-400 text-sm sm:text-base">
-                  PDF document<br />Download to view full content
-                </p>
-              </div>
-            ) : (
-              <img
-                src={documentUrl || "/placeholder.svg"}
-                alt="Document"
-                className="max-w-full max-h-full object-contain"
-              />
-            )}
-          </div>
-
-          {/* Field Value Editor - Right Side */}
-          <div className="lg:w-96 flex flex-col gap-4">
+        <div className="flex-1 overflow-auto p-4">
+          {/* Field Value Editor */}
+          <div className="flex flex-col gap-4">
             <div className="space-y-2">
               <Label className="text-gray-700 dark:text-gray-300 font-semibold">Edit Value</Label>
               <textarea

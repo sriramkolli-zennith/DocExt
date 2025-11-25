@@ -69,7 +69,9 @@ Deno.serve(async (req) => {
           type,
           description,
           page_number,
-          bounding_box
+          bounding_box,
+          label_page_number,
+          label_bounding_box
         )
       `)
       .eq("document_id", documentId)
@@ -93,6 +95,8 @@ Deno.serve(async (req) => {
       confidence: item.confidence,
       pageNumber: item.document_fields.page_number,
       boundingBox: item.document_fields.bounding_box,
+      labelPageNumber: item.document_fields.label_page_number,
+      labelBoundingBox: item.document_fields.label_bounding_box,
     })) || []
 
     return new Response(

@@ -40,6 +40,8 @@ interface ExtractedField {
   boundingRegions?: BoundingRegion[]
   pageNumber?: number
   boundingBox?: number[]
+  labelPageNumber?: number
+  labelBoundingBox?: number[]
 }
 
 interface Document {
@@ -464,7 +466,7 @@ export default function DocumentDetailPage() {
                 fields.map((field) => (
                   <Card 
                     key={field.id} 
-                    className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:shadow-md dark:hover:shadow-lg transition" 
+                    className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:shadow-lg hover:border-gray-300 dark:hover:border-slate-600 transition-all duration-200 cursor-pointer" 
                     onClick={() => {
                       setSelectedFieldForPDF(field)
                       setPdfSidebarOpen(true)
@@ -542,7 +544,7 @@ export default function DocumentDetailPage() {
                               e.stopPropagation()
                               handleDeleteField(field.fieldId)
                             }}
-                            className="hidden sm:flex text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800"
+                            className="hidden sm:flex text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30"
                             title="Delete field"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -578,8 +580,8 @@ export default function DocumentDetailPage() {
                   </div>
                 )}
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Fields</p>
-                  <p className="font-medium">{fields.length}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Total Fields</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{fields.length}</p>
                 </div>
               </CardContent>
             </Card>
@@ -616,6 +618,8 @@ export default function DocumentDetailPage() {
           confidence={selectedFieldForPDF.confidence || undefined}
           pageNumber={selectedFieldForPDF.pageNumber}
           boundingBox={selectedFieldForPDF.boundingBox}
+          labelPageNumber={selectedFieldForPDF.labelPageNumber}
+          labelBoundingBox={selectedFieldForPDF.labelBoundingBox}
         />
       )}
     </div>

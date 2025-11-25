@@ -75,6 +75,8 @@ CREATE TABLE IF NOT EXISTS public.document_fields (
   description text,
   page_number integer,
   bounding_box jsonb,
+  label_page_number integer,
+  label_bounding_box jsonb,
   created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

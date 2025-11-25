@@ -369,6 +369,8 @@ Deno.serve(async (req) => {
           // Extract bounding regions from Azure response
           let pageNumber = null
           let boundingBox = null
+          let labelPageNumber = null
+          let labelBoundingBox = null
           if (azureField?.boundingRegions && azureField.boundingRegions.length > 0) {
             const firstRegion = azureField.boundingRegions[0]
             pageNumber = firstRegion.pageNumber
@@ -386,13 +388,30 @@ Deno.serve(async (req) => {
               boundingBox = rawPolygon
             }
           }
+          if (azureField?.labelBoundingRegions && azureField.labelBoundingRegions.length > 0) {
+            const firstLabelRegion = azureField.labelBoundingRegions[0]
+            labelPageNumber = firstLabelRegion.pageNumber
+            const rawLabelPolygon = firstLabelRegion.polygon || firstLabelRegion.boundingBox
+
+            if (rawLabelPolygon && typeof rawLabelPolygon[0] === 'object' && rawLabelPolygon[0].x !== undefined) {
+              labelBoundingBox = []
+              for (const point of rawLabelPolygon) {
+                labelBoundingBox.push(point.x, point.y)
+              }
+            } else {
+              labelBoundingBox = rawLabelPolygon
+            }
+          }
           
           console.log(`  "${field.name}" → ${matchedFieldName ? `"${matchedFieldName}" ✅ (${matchType})` : 'Not found ❌'}`)
           if (value !== null) {
             console.log(`    📝 Value: "${value}" (confidence: ${confidence ? (confidence * 100).toFixed(1) + '%' : 'N/A'})`)
           }
           if (pageNumber && boundingBox) {
-            console.log(`    📍 Page ${pageNumber} | Raw Azure coords: [${boundingBox.slice(0, 8).join(', ')}${boundingBox.length > 8 ? '...' : ''}]`)
+            console.log(`    📍 Value @ Page ${pageNumber} | Raw coords: [${boundingBox.slice(0, 8).join(', ')}${boundingBox.length > 8 ? '...' : ''}]`)
+          }
+          if (labelPageNumber && labelBoundingBox) {
+            console.log(`    🔖 Label @ Page ${labelPageNumber} | Raw coords: [${labelBoundingBox.slice(0, 8).join(', ')}${labelBoundingBox.length > 8 ? '...' : ''}]`)
           }
           
           return {
@@ -402,6 +421,8 @@ Deno.serve(async (req) => {
             confidence: confidence,
             pageNumber: pageNumber,
             boundingBox: boundingBox,
+            labelPageNumber: labelPageNumber,
+            labelBoundingBox: labelBoundingBox,
             found: matchResult !== null && value !== null
           }
         })
@@ -417,18 +438,25 @@ Deno.serve(async (req) => {
 
       // Update document_fields with bounding box data
       for (const data of dataToSave) {
+        const updatePayload: Record<string, unknown> = {}
         if (data.pageNumber && data.boundingBox) {
+          updatePayload.page_number = data.pageNumber
+          updatePayload.bounding_box = data.boundingBox
+        }
+        if (data.labelPageNumber && data.labelBoundingBox) {
+          updatePayload.label_page_number = data.labelPageNumber
+          updatePayload.label_bounding_box = data.labelBoundingBox
+        }
+
+        if (Object.keys(updatePayload).length > 0) {
           await supabaseClient
             .from("document_fields")
-            .update({ 
-              page_number: data.pageNumber, 
-              bounding_box: data.boundingBox 
-            })
+            .update(updatePayload)
             .eq("id", data.field_id)
         }
       }
 
-      const fieldsToInsert = dataToSave.map(({ found, pageNumber, boundingBox, ...rest }: any) => rest)
+      const fieldsToInsert = dataToSave.map(({ found, pageNumber, boundingBox, labelPageNumber, labelBoundingBox, ...rest }: any) => rest)
 
       if (fieldsToInsert.length > 0) {
         console.log(`💾 Saving ${fieldsToInsert.length} field(s) to extracted_data table...`)
