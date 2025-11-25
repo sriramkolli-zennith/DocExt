@@ -472,6 +472,206 @@ Deno.serve(async (req) => {
       } else {
         console.log("⚠️  No data to save")
       }
+
+      // Generate field-specific recommendations for unextracted fields
+      console.log("💡 Generating field-specific recommendations for missing fields...")
+      
+      // Helper to calculate semantic similarity score
+      const calculateRelevanceScore = (requestedField: string, azureField: string): number => {
+        const req = requestedField.toLowerCase()
+        const azure = azureField.toLowerCase()
+        
+        // Exact match
+        if (req === azure) return 100
+        
+        // Contains relationship
+        if (req.includes(azure) || azure.includes(req)) return 80
+        
+        // Common field patterns and relationships
+        const fieldRelationships: Record<string, string[]> = {
+          'invoiceid': ['invoicenumber', 'documentnumber', 'billnumber', 'referencenumber'],
+          'invoicedate': ['date', 'issuedate', 'billdate', 'duedate'],
+          'vendorname': ['vendor', 'supplier', 'sellername', 'merchantname', 'customername'],
+          'total': ['totalamount', 'amountdue', 'totalprice', 'grandtotal', 'invoicetotal'],
+          'amount': ['total', 'subtotal', 'balance', 'price'],
+          'tax': ['salestax', 'vat', 'taxamount', 'taxtotal'],
+          'address': ['billingaddress', 'shippingaddress', 'customeraddress', 'vendoraddress'],
+          'phone': ['phonenumber', 'telephone', 'mobile', 'contact'],
+          'email': ['emailaddress', 'contactemail'],
+          'description': ['itemdescription', 'productdescription', 'details'],
+          'quantity': ['qty', 'amount', 'count'],
+          'price': ['unitprice', 'amount', 'cost'],
+          'customer': ['customername', 'clientname', 'buyer', 'purchaser'],
+          'po': ['purchaseorder', 'ponumber', 'ordernumber'],
+          'payment': ['paymentterms', 'paymentmethod', 'duedate']
+        }
+        
+        // Check field relationships
+        const normalizedReq = req.replace(/[^a-z0-9]/g, '')
+        const normalizedAzure = azure.replace(/[^a-z0-9]/g, '')
+        
+        for (const [key, relatedFields] of Object.entries(fieldRelationships)) {
+          if (normalizedReq.includes(key)) {
+            if (relatedFields.some(rf => normalizedAzure.includes(rf))) return 70
+          }
+        }
+        
+        // Word overlap
+        const reqWords = req.split(/[\s_-]+/)
+        const azureWords = azure.split(/[\s_-]+/)
+        const overlap = reqWords.filter(w => azureWords.some(aw => aw.includes(w) || w.includes(aw)))
+        if (overlap.length > 0) return 50 + (overlap.length * 10)
+        
+        return 0
+      }
+      
+      // Get available Azure fields (not already matched)
+      const extractedFieldNames = new Set(
+        docFields
+          .filter((f: any) => dataToSave.find((d: any) => d.field_id === f.id && d.found))
+          .map((f: any) => f.name.toLowerCase())
+      )
+      
+      const availableAzureFields = Object.entries(extractedData)
+        .filter(([fieldName, fieldData]: [string, any]) => {
+          // Check if already extracted
+          const isAlreadyExtracted = extractedFieldNames.has(fieldName.toLowerCase())
+          
+          // Extract value
+          const fieldDataTyped = fieldData as any
+          let value = null
+          if (fieldDataTyped.content) value = fieldDataTyped.content
+          else if (fieldDataTyped.valueString) value = fieldDataTyped.valueString
+          else if (fieldDataTyped.valueNumber !== undefined) value = fieldDataTyped.valueNumber.toString()
+          else if (fieldDataTyped.value) value = fieldDataTyped.value
+          
+          const confidence = fieldDataTyped.confidence || 0
+          return !isAlreadyExtracted && value && confidence >= 0.4
+        })
+        .map(([fieldName, fieldData]: [string, any]) => {
+          const fieldDataTyped = fieldData as any
+          
+          // Extract value
+          let value = null
+          if (fieldDataTyped.content) value = fieldDataTyped.content
+          else if (fieldDataTyped.valueString) value = fieldDataTyped.valueString
+          else if (fieldDataTyped.valueNumber !== undefined) value = fieldDataTyped.valueNumber.toString()
+          else if (fieldDataTyped.value) value = fieldDataTyped.value
+          
+          // Extract bounding regions
+          let pageNumber = null
+          let boundingBox = null
+          let labelPageNumber = null
+          let labelBoundingBox = null
+          
+          if (fieldDataTyped.boundingRegions && fieldDataTyped.boundingRegions.length > 0) {
+            const firstRegion = fieldDataTyped.boundingRegions[0]
+            pageNumber = firstRegion.pageNumber
+            const rawPolygon = firstRegion.polygon || firstRegion.boundingBox
+            
+            if (rawPolygon && typeof rawPolygon[0] === 'object' && rawPolygon[0].x !== undefined) {
+              boundingBox = []
+              for (const point of rawPolygon) {
+                boundingBox.push(point.x, point.y)
+              }
+            } else {
+              boundingBox = rawPolygon
+            }
+          }
+          
+          if (fieldDataTyped.labelBoundingRegions && fieldDataTyped.labelBoundingRegions.length > 0) {
+            const firstLabelRegion = fieldDataTyped.labelBoundingRegions[0]
+            labelPageNumber = firstLabelRegion.pageNumber
+            const rawLabelPolygon = firstLabelRegion.polygon || firstLabelRegion.boundingBox
+
+            if (rawLabelPolygon && typeof rawLabelPolygon[0] === 'object' && rawLabelPolygon[0].x !== undefined) {
+              labelBoundingBox = []
+              for (const point of rawLabelPolygon) {
+                labelBoundingBox.push(point.x, point.y)
+              }
+            } else {
+              labelBoundingBox = rawLabelPolygon
+            }
+          }
+          
+          return {
+            fieldName,
+            value: String(value || ''),
+            confidence: fieldDataTyped.confidence || 0,
+            type: fieldDataTyped.type || 'text',
+            pageNumber,
+            boundingBox,
+            labelPageNumber,
+            labelBoundingBox
+          }
+        })
+      
+      // For each missing field, find top 3 contextually relevant recommendations
+      const allRecommendations: any[] = []
+      
+      for (const field of docFields) {
+        const isFieldExtracted = dataToSave.find((d: any) => d.field_id === field.id && d.found)
+        
+        if (!isFieldExtracted) {
+          console.log(`💡 Finding recommendations for missing field: "${field.name}"`)
+          
+          // Score and rank available fields by relevance
+          const scoredFields = availableAzureFields.map(azureField => ({
+            ...azureField,
+            relevanceScore: calculateRelevanceScore(field.name, azureField.fieldName),
+            // Combined score: relevance * confidence
+            combinedScore: calculateRelevanceScore(field.name, azureField.fieldName) * azureField.confidence
+          }))
+          
+          // Sort by combined score and take top 3
+          const topRecommendations = scoredFields
+            .filter(f => f.combinedScore > 0)
+            .sort((a, b) => b.combinedScore - a.combinedScore)
+            .slice(0, 3)
+          
+          if (topRecommendations.length > 0) {
+            console.log(`  Found ${topRecommendations.length} contextual recommendation(s):`)
+            
+            topRecommendations.forEach((rec, index) => {
+              console.log(`    ${index + 1}. "${rec.fieldName}" = "${rec.value}" (relevance: ${rec.relevanceScore}%, confidence: ${(rec.confidence * 100).toFixed(1)}%)`)
+              
+              allRecommendations.push({
+                document_id: docId,
+                missing_field_id: field.id,
+                missing_field_name: field.name,
+                recommended_field_name: rec.fieldName,
+                field_value: rec.value,
+                confidence: rec.confidence,
+                relevance_score: rec.relevanceScore,
+                field_type: rec.type,
+                page_number: rec.pageNumber,
+                bounding_box: rec.boundingBox,
+                label_page_number: rec.labelPageNumber,
+                label_bounding_box: rec.labelBoundingBox,
+                rank: index + 1
+              })
+            })
+          } else {
+            console.log(`  ⚠️  No contextual recommendations found`)
+          }
+        }
+      }
+      
+      if (allRecommendations.length > 0) {
+        console.log(`💾 Saving ${allRecommendations.length} field-specific recommendation(s)...`)
+        
+        const { error: recError } = await supabaseClient
+          .from("field_recommendations")
+          .upsert(allRecommendations, { onConflict: "document_id,missing_field_id,recommended_field_name" })
+        
+        if (recError) {
+          console.error("❌ Error saving recommendations:", recError)
+        } else {
+          console.log("✅ Field-specific recommendations saved successfully")
+        }
+      } else {
+        console.log("⚠️  No recommendations needed - all fields extracted successfully")
+      }
     }
 
     console.log("🏁 Marking document as completed...")

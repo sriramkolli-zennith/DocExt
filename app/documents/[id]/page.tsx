@@ -44,6 +44,22 @@ interface ExtractedField {
   labelBoundingBox?: number[]
 }
 
+interface Recommendation {
+  id: string
+  missingFieldId: string
+  missingFieldName: string
+  fieldName: string
+  fieldValue: string
+  confidence: number
+  relevanceScore: number
+  fieldType: string
+  rank: number
+  pageNumber?: number
+  boundingBox?: number[]
+  labelPageNumber?: number
+  labelBoundingBox?: number[]
+}
+
 interface Document {
   id: string
   name: string
@@ -59,6 +75,7 @@ export default function DocumentDetailPage() {
   const documentId = params.id as string
   const [document, setDocument] = useState<Document | null>(null)
   const [fields, setFields] = useState<ExtractedField[]>([])
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isProcessing, setIsProcessing] = useState(false)
   const [newFieldName, setNewFieldName] = useState("")
@@ -96,10 +113,64 @@ export default function DocumentDetailPage() {
         setDocument(extractedData.document)
         setFields(extractedData.extractedFields || [])
       }
+
+      // Fetch recommendations
+      await fetchRecommendations()
     } catch (error) {
       console.error("Failed to fetch data:", error)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const fetchRecommendations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("field_recommendations")
+        .select(`
+          id,
+          missing_field_id,
+          missing_field_name,
+          recommended_field_name,
+          field_value,
+          confidence,
+          relevance_score,
+          field_type,
+          rank,
+          page_number,
+          bounding_box,
+          label_page_number,
+          label_bounding_box
+        `)
+        .eq("document_id", documentId)
+        .order("missing_field_id", { ascending: true })
+        .order("rank", { ascending: true })
+
+      if (error) {
+        console.error("Failed to fetch recommendations:", error)
+        return
+      }
+
+      // Transform to match interface
+      const transformedData = data?.map(rec => ({
+        id: rec.id,
+        missingFieldId: rec.missing_field_id,
+        missingFieldName: rec.missing_field_name,
+        fieldName: rec.recommended_field_name,
+        fieldValue: rec.field_value,
+        confidence: rec.confidence,
+        relevanceScore: rec.relevance_score,
+        fieldType: rec.field_type,
+        rank: rec.rank,
+        pageNumber: rec.page_number,
+        boundingBox: rec.bounding_box,
+        labelPageNumber: rec.label_page_number,
+        labelBoundingBox: rec.label_bounding_box,
+      })) || []
+
+      setRecommendations(transformedData)
+    } catch (error) {
+      console.error("Error fetching recommendations:", error)
     }
   }
 
@@ -290,6 +361,93 @@ export default function DocumentDetailPage() {
   }
 
   const handleFieldValueChange = async (fieldId: string, newValue: string) => {
+    try {
+      const { error } = await supabase
+        .from("extracted_data")
+        .update({ value: newValue })
+        .eq("field_id", fieldId)
+
+      if (error) throw error
+
+      // Update local state
+      setFields(prevFields =>
+        prevFields.map((field) =>
+          field.fieldId === fieldId ? { ...field, value: newValue } : field
+        )
+      )
+    } catch (error) {
+      console.error("Failed to update field value:", error)
+    }
+  }
+
+  const handleAddRecommendedField = async (recommendation: Recommendation) => {
+    if (!document) return
+    setIsProcessing(true)
+
+    try {
+      // Update the existing field with the recommended value
+      const { error: dataError } = await supabase
+        .from("extracted_data")
+        .upsert({
+          document_id: documentId,
+          field_id: recommendation.missingFieldId,
+          value: recommendation.fieldValue,
+          confidence: recommendation.confidence,
+        }, { 
+          onConflict: "document_id,field_id" 
+        })
+
+      if (dataError) throw dataError
+
+      // Update the document_fields table with bounding box info
+      const updatePayload: Record<string, unknown> = {}
+      if (recommendation.pageNumber) updatePayload.page_number = recommendation.pageNumber
+      if (recommendation.boundingBox) updatePayload.bounding_box = recommendation.boundingBox
+      if (recommendation.labelPageNumber) updatePayload.label_page_number = recommendation.labelPageNumber
+      if (recommendation.labelBoundingBox) updatePayload.label_bounding_box = recommendation.labelBoundingBox
+
+      if (Object.keys(updatePayload).length > 0) {
+        await supabase
+          .from("document_fields")
+          .update(updatePayload)
+          .eq("id", recommendation.missingFieldId)
+      }
+
+      // Remove this specific recommendation
+      const { error: deleteError } = await supabase
+        .from("field_recommendations")
+        .delete()
+        .eq("id", recommendation.id)
+
+      if (deleteError) console.error("Failed to delete recommendation:", deleteError)
+
+      // Update local state
+      setFields(fields.map(f => 
+        f.fieldId === recommendation.missingFieldId 
+          ? { 
+              ...f, 
+              value: recommendation.fieldValue, 
+              confidence: recommendation.confidence,
+              pageNumber: recommendation.pageNumber,
+              boundingBox: recommendation.boundingBox,
+              labelPageNumber: recommendation.labelPageNumber,
+              labelBoundingBox: recommendation.labelBoundingBox
+            }
+          : f
+      ))
+      
+      // Remove recommendation from local state
+      setRecommendations(recommendations.filter(r => r.id !== recommendation.id))
+      
+    } catch (error) {
+      console.error("Failed to add recommended field:", error)
+      alert("Failed to add recommended field. Please try again.")
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  const handleUpdateField = async (fieldId: string, newValue: string) => {
     try {
       const { data: existingData } = await supabase
         .from("extracted_data")
@@ -506,6 +664,49 @@ export default function DocumentDetailPage() {
                             <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
                               Confidence: {(field.confidence * 100).toFixed(0)}%
                             </p>
+                          )}
+                          
+                          {/* Field-specific recommendations */}
+                          {(!field.value || field.value === "Not extracted") && recommendations.filter(rec => rec.missingFieldId === field.fieldId).length > 0 && (
+                            <div className="mt-3 space-y-2">
+                              <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">
+                                💡 Suggestions from document:
+                              </p>
+                              {recommendations
+                                .filter(rec => rec.missingFieldId === field.fieldId)
+                                .map((rec, idx) => (
+                                  <div
+                                    key={rec.id}
+                                    className="flex items-center justify-between gap-2 p-2 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded text-sm"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                                        {rec.fieldName}
+                                      </p>
+                                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                        {rec.fieldValue}
+                                      </p>
+                                      <p className="text-xs text-gray-600 dark:text-gray-400">
+                                        {(rec.confidence * 100).toFixed(0)}% confidence · {rec.relevanceScore}% relevance
+                                      </p>
+                                    </div>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleAddRecommendedField(rec)
+                                      }}
+                                      disabled={isProcessing}
+                                      className="shrink-0 h-7 px-2 gap-1 text-xs bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white disabled:opacity-60"
+                                    >
+                                      <Plus className="h-3 w-3" />
+                                      Use
+                                    </Button>
+                                  </div>
+                                ))}
+                            </div>
                           )}
                         </div>
                         <div className="flex gap-2 shrink-0">
