@@ -115,6 +115,17 @@ export async function getExtractedData(documentId: string) {
 }
 
 /**
+ * Update user feedback for an extracted field
+ */
+export async function updateFieldFeedback(params: {
+  extractedDataId: string
+  action: 'thumbs_up' | 'thumbs_down' | 'select_from_top3'
+  selectedIndex?: number
+}) {
+  return callEdgeFunction("update-field-feedback", params)
+}
+
+/**
  * Check if a document with the same contents already exists
  */
 export async function checkDuplicateDocument(params: {

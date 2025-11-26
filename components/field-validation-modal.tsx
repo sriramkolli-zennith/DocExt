@@ -1,115 +1,112 @@
 "use client"
 
-import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { X } from "lucide-react"
+import { X, Check } from "lucide-react"
+
+interface Alternative {
+  value: string
+  confidence: number
+  pageNumber: number
+}
 
 interface FieldValidationModalProps {
   isOpen: boolean
-  field: {
-    id: string
-    fieldId: string
-    fieldName: string
-    value: string
-    confidence: number | null
-  }
-  documentUrl: string
+  fieldName: string
+  currentValue: string
+  alternatives: Alternative[]
   onClose: () => void
-  onFieldValueChange: (fieldId: string, newValue: string) => void
+  onSelectAlternative: (index: number) => void
 }
 
 export default function FieldValidationModal({
   isOpen,
-  field,
-  documentUrl,
+  fieldName,
+  currentValue,
+  alternatives,
   onClose,
-  onFieldValueChange,
+  onSelectAlternative,
 }: FieldValidationModalProps) {
-  const [editedValue, setEditedValue] = useState(field.value)
-  const [isSaving, setIsSaving] = useState(false)
-
-  const handleSave = async () => {
-    setIsSaving(true)
-    try {
-      // Use fieldId (the actual database ID) for the update
-      await onFieldValueChange(field.fieldId, editedValue)
-      onClose()
-    } catch (error) {
-      console.error("Failed to save:", error)
-    } finally {
-      setIsSaving(false)
-    }
-  }
-
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 dark:bg-black/70 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-lg max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-gray-200 dark:border-slate-700">
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">{field.fieldName}</h2>
-          <Button variant="ghost" size="sm" onClick={onClose} className="ml-2 hover:bg-gray-200 dark:hover:bg-slate-700">
-            <X className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-          </Button>
+        <div className="flex items-center justify-between p-6 border-b">
+          <div>
+            <h2 className="text-xl font-bold">Select Correct Value</h2>
+            <p className="text-sm text-gray-600 mt-1">{fieldName}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto p-4">
-          {/* Field Value Editor */}
-          <div className="flex flex-col gap-4">
-            <div className="space-y-2">
-              <Label className="text-gray-700 dark:text-gray-300 font-semibold">Edit Value</Label>
-              <textarea
-                value={editedValue}
-                onChange={(e) => setEditedValue(e.target.value)}
-                className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 resize-none transition-colors"
-                rows={8}
-                placeholder="Enter the correct value..."
-              />
-            </div>
-
-            {field.confidence && (
-              <div className="space-y-2 bg-gray-50 dark:bg-slate-800 p-3 rounded-lg border border-gray-200 dark:border-slate-700">
-                <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Confidence Score</p>
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-2 bg-gray-300 dark:bg-slate-700 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full transition-all ${
-                        field.confidence > 0.8 
-                          ? "bg-gray-900 dark:bg-gray-100" 
-                          : field.confidence > 0.6 
-                          ? "bg-gray-600 dark:bg-gray-400" 
-                          : "bg-gray-400 dark:bg-gray-600"
-                      }`}
-                      style={{ width: `${field.confidence * 100}%` }} 
-                    />
-                  </div>
-                  <span className="text-sm font-bold text-gray-700 dark:text-gray-300 min-w-[3rem] text-right">
-                    {(field.confidence * 100).toFixed(0)}%
-                  </span>
-                </div>
-              </div>
-            )}
-
-            <div className="flex gap-2 mt-auto pt-4">
-              <Button 
-                variant="outline" 
-                onClick={onClose} 
-                className="flex-1 border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800"
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleSave} 
-                disabled={isSaving} 
-                className="flex-1 bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black"
-              >
-                {isSaving ? "Saving..." : "Save"}
-              </Button>
+        <div className="flex-1 overflow-auto p-6">
+          <div className="mb-4">
+            <p className="text-sm text-gray-600 mb-2">Current value:</p>
+            <div className="p-3 bg-gray-50 border rounded-lg">
+              <p className="font-medium">{currentValue}</p>
             </div>
           </div>
+
+          <p className="text-sm font-semibold text-gray-700 mb-3">
+            Alternative values found:
+          </p>
+
+          <div className="space-y-3">
+            {alternatives && alternatives.length > 0 ? alternatives.map((alt, index) => (
+              <button
+                key={index}
+                onClick={() => onSelectAlternative(index)}
+                className="w-full text-left p-4 border-2 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all group"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900 mb-2">{alt.value}</p>
+                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                      <span>Confidence: {(alt.confidence * 100).toFixed(1)}%</span>
+                      <span>Page: {alt.pageNumber}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="p-1 rounded-full border-2 border-gray-300 group-hover:border-blue-500 group-hover:bg-blue-500 transition-all">
+                      <Check className="h-4 w-4 text-transparent group-hover:text-white" />
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-2">
+                  <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-blue-500 transition-all"
+                      style={{ width: `${alt.confidence * 100}%` }}
+                    />
+                  </div>
+                </div>
+              </button>
+            )) : null}
+          </div>
+
+          {(!alternatives || alternatives.length === 0) && (
+            <p className="text-gray-500 text-center py-8">
+              No alternative values available
+            </p>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-6 border-t bg-gray-50">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            className="w-full"
+          >
+            Cancel
+          </Button>
         </div>
       </div>
     </div>
