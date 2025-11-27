@@ -6,7 +6,9 @@
     "moduleResolution": "bundler",
     "strict": true,
     "noEmit": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "noImplicitAny": false
   },
   "include": [
     "./**/*.ts"
