@@ -1,5 +1,5 @@
 import { createClient } from "jsr:@supabase/supabase-js@2"
-import { corsHeaders } from "../_shared/cors.ts"
+import { corsHeaders } from "../_shared/cors"
 
 interface UploadRequest {
   fileName: string

@@ -75,6 +75,8 @@ export default function DocumentDetailPage() {
   const [selectedField, setSelectedField] = useState<ExtractedField | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [pdfSidebarOpen, setPdfSidebarOpen] = useState(false)
+  const [pdfAutoCloseEnabled, setPdfAutoCloseEnabled] = useState(false)
+  const [pdfAutoCloseToken, setPdfAutoCloseToken] = useState(0)
   const [selectedFieldForPDF, setSelectedFieldForPDF] = useState<ExtractedField | null>(null)
   const [feedbackLoading, setFeedbackLoading] = useState<string | null>(null)
   const [editingField, setEditingField] = useState<ExtractedField | null>(null)
@@ -908,6 +910,8 @@ export default function DocumentDetailPage() {
           boundingBox={selectedFieldForPDF.boundingBox}
           labelPageNumber={selectedFieldForPDF.labelPageNumber}
           labelBoundingBox={selectedFieldForPDF.labelBoundingBox}
+          autoCloseEnabled={pdfAutoCloseEnabled}
+          autoCloseToken={pdfAutoCloseToken}
         />
       )}
     </div>

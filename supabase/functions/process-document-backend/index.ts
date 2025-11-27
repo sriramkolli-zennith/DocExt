@@ -1,5 +1,5 @@
 ﻿import { createClient } from "jsr:@supabase/supabase-js@2"
-import { corsHeaders } from "../_shared/cors.ts"
+import { corsHeaders } from "../_shared/cors"
 
 interface FieldToExtract {
   name: string
@@ -15,6 +15,12 @@ interface ProcessRequest {
   originalFileName?: string
   fileHash?: string
   fieldsToExtract: FieldToExtract[]
+}
+
+interface DocumentFieldRecord {
+  id: string
+  name: string
+  type: string
 }
 
 Deno.serve(async (req) => {
@@ -289,14 +295,16 @@ Deno.serve(async (req) => {
       }
     })
 
-    const { data: docFields } = await supabaseClient
+    const { data: docFieldsData } = await supabaseClient
       .from("document_fields")
       .select("id, name, type")
       .eq("document_id", docId)
 
+    const docFields: DocumentFieldRecord[] = (docFieldsData ?? []) as DocumentFieldRecord[]
+
     console.log("🔍 Fetched document fields from database:")
-    console.log(`  Total fields in DB: ${docFields?.length || 0}`)
-    docFields?.forEach((field, idx) => {
+    console.log(`  Total fields in DB: ${docFields.length}`)
+    docFields.forEach((field, idx) => {
       console.log(`  ${idx + 1}. ID: ${field.id}, Name: "${field.name}", Type: "${field.type}"`)
     })
 
@@ -363,10 +371,10 @@ Deno.serve(async (req) => {
         .slice(0, 4)
     }
 
-    if (docFields) {
+    if (docFields.length > 0) {
       console.log("🔗 Matching requested fields with Azure extracted fields (TOP 4):")
       const dataToSave = docFields
-        .map((field: any) => {
+        .map((field) => {
           const top4Matches = findTop4AzureFields(field.name)
           
           // Helper to extract value from Azure field

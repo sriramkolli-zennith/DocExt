@@ -1,8 +1,36 @@
 ﻿import { createClient } from "jsr:@supabase/supabase-js@2"
-import { corsHeaders } from "../_shared/cors.ts"
+ import { corsHeaders } from "../_shared/cors"
 
 interface GetDataRequest {
   documentId: string
+}
+
+interface DocumentFieldRecord {
+  id: string
+  name: string
+  type: string
+  description: string | null
+  page_number: number | null
+  bounding_box: number[] | null
+  label_page_number: number | null
+  label_bounding_box: number[] | null
+}
+
+interface ExtractedDataRecord {
+  id: string
+  value: string | null
+  confidence: number | null
+  top3_values: string[] | null
+  top3_confidences: number[] | null
+  top3_page_numbers: (number | null)[] | null
+  top3_bounding_boxes: number[][] | null
+  top3_label_page_numbers: (number | null)[] | null
+  top3_label_bounding_boxes: number[][] | null
+  user_feedback: string | null
+  is_manually_selected: boolean | null
+  selected_from_top3_index: number | null
+  feedback_timestamp: string | null
+  document_fields: DocumentFieldRecord
 }
 
 Deno.serve(async (req) => {
@@ -95,7 +123,9 @@ Deno.serve(async (req) => {
       )
     }
 
-    const formattedData = extractedData?.map((item) => ({
+    const typedData: ExtractedDataRecord[] = (extractedData ?? []) as ExtractedDataRecord[]
+
+    const formattedData = typedData.map((item) => ({
       id: item.id,
       fieldId: item.document_fields.id,
       fieldName: item.document_fields.name,

@@ -14,6 +14,7 @@ DocExt is a full-stack document extraction platform that allows users to upload 
 - **Real-time Dashboard**: View all processed documents and extracted data
 - **Secure Storage**: User-scoped document storage with RLS protection
 - **Field Validation**: Edit and manually correct extracted values with live updates
+- **Feedback Loop**: Capture thumbs-up/down responses, surface up to four AI-proposed alternatives, and learn from manual selections
 - **Dark Mode Support**: Full dark mode support across all pages
 - **Responsive Design**: Mobile-first responsive design on all devices
 
@@ -47,9 +48,69 @@ See `DATABASE_SETUP.sql` for complete schema. Key tables:
 - Defines which fields to extract from each document
 - Flexible field types: text, number, date, email, phone, currency, boolean
 
+
+## 🧠 Top Alternatives & Feedback
+
+### Capabilities
+- Stores up to four high-confidence matches (value + label bounding boxes) for every requested field
+- Lets users approve or reject extractions, pick any alternative, and flag manual overrides
+- Generates AI-powered recommendations for fields that failed extraction so your team can backfill data later
+
+### Database Additions
+- `extracted_data` includes `top3_*` arrays, `user_feedback`, `is_manually_selected`, `selected_from_top3_index`, and `feedback_timestamp`
+- `document_fields` records capture both value and label bounding metadata for precise PDF highlighting
+- `field_recommendations` keeps rank-ordered fallback suggestions per missing field
+- `documents` enforces deduplication via the `file_hash` column/index to block duplicates
+
+### Edge Functions
+1. `process-document-backend` ranks Azure fields with `calculateMatchScore`, saves the best value plus three alternatives, and produces contextual recommendations
+2. `get-extracted-data-backend` returns the enriched dataset (alternatives, bounding boxes, feedback flags)
+3. `update-field-feedback` records thumbs-up/down actions, manual selections, and synchronizes the stored value
+
+### Frontend Experience
+- `app/documents/[id]/page.tsx` surfaces thumbs controls, a "manually selected" badge, and feeds label/value polygons to `PDFViewerSidebar`
+- `FieldValidationModal` renders confidence bars, page metadata, and supports one-click alternative selection
+- `PDFViewerSidebar` highlights values (amber) and labels (blue) with synchronized auto-close + auto-scroll behavior
+
+### Deployment Checklist
+1. **Apply `DATABASE_SETUP.sql`** in the Supabase SQL Editor (or via `supabase db push`) to provision tables, policies, triggers, indexes, and verification queries
+2. **Deploy edge functions** with `npm run functions:deploy` (or the scoped scripts) so backend logic matches the schema
+3. **Deploy/push the frontend** – run `npm run build && npm run start` locally or `git push origin main` to trigger CI/CD
+
+### Monitoring & Verification
+```sql
+-- Verify extracted_data captures feedback + label metadata
+SELECT id, top3_values, top3_label_page_numbers, user_feedback, is_manually_selected
+FROM extracted_data ORDER BY created_at DESC LIMIT 5;
+
+-- Inspect document_fields for stored label polygons
+SELECT id, name, label_page_number, label_bounding_box IS NOT NULL AS has_label_box
+FROM document_fields WHERE label_page_number IS NOT NULL LIMIT 5;
+
+-- Review recommendation coverage
+SELECT missing_field_name, COUNT(*) AS recommendations
+FROM field_recommendations GROUP BY missing_field_name;
+```
+
+```bash
+# Tail Supabase function logs (all functions)
 ### Extracted_Data
+
+# Focus on the feedback function (requires linked project)
 - Stores extracted values with confidence scores
+```
+
+### Rollback Notes
+- Drop the `top3_*` and feedback columns plus the `field_recommendations` table, then redeploy the previous function builds to revert
+- Always snapshot data or run changes in staging before executing destructive SQL
+
+- Persists up to four alternative values, confidences, page/label bounding boxes, and user feedback metadata (thumbs, manual selection, timestamps)
 - Unique constraint on (document_id, field_id) to prevent duplicates
+
+### Field_Recommendations
+- Tracks contextual suggestions for fields that failed extraction
+- Stores recommended field metadata, page + bounding box info, and rank-ordered relevance scores
+- Enables surfacing smart fallbacks in the UI or analytics
 
 ### Storage Buckets
 - `documents` bucket: Stores PDFs and images
