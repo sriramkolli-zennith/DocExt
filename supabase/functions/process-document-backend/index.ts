@@ -275,11 +275,18 @@ Deno.serve(async (req) => {
     console.log("📤 Azure Response - Extracted Fields:")
     console.log("  Total fields found:", Object.keys(extractedData).length)
     Object.entries(extractedData).forEach(([key, value]: [string, any]) => {
+      const hasValueBounding = value?.boundingRegions && value.boundingRegions.length > 0
+      const hasLabelBounding = value?.labelBoundingRegions && value.labelBoundingRegions.length > 0
       console.log(`  - ${key}:`, {
         value: value?.value || value?.content,
         confidence: value?.confidence,
-        type: value?.type
+        type: value?.type,
+        hasValueBounding: hasValueBounding ? '✅' : '❌',
+        hasLabelBounding: hasLabelBounding ? '✅' : '❌'
       })
+      if (hasLabelBounding) {
+        console.log(`    🔖 Label @ Page ${value.labelBoundingRegions[0].pageNumber}`)
+      }
     })
 
     const { data: docFields } = await supabaseClient
@@ -329,8 +336,8 @@ Deno.serve(async (req) => {
       return 0
     }
 
-    // Helper function to find TOP 3 matching Azure fields with intelligent matching
-    const findTop3AzureFields = (requestedName: string): Array<{ fieldName: string; data: any; matchScore: number; matchType: string }> => {
+    // Helper function to find TOP 4 matching Azure fields with intelligent matching (1st is primary, next 3 are alternatives)
+    const findTop4AzureFields = (requestedName: string): Array<{ fieldName: string; data: any; matchScore: number; matchType: string }> => {
       // Score all Azure fields
       const scoredFields = Object.entries(extractedData).map(([fieldName, fieldData]) => {
         const matchScore = calculateMatchScore(requestedName, fieldName)
@@ -349,18 +356,18 @@ Deno.serve(async (req) => {
         }
       })
       
-      // Sort by match score (descending) and take top 3
+      // Sort by match score (descending) and take top 4
       return scoredFields
         .filter(f => f.matchScore > 0)
         .sort((a, b) => b.matchScore - a.matchScore)
-        .slice(0, 3)
+        .slice(0, 4)
     }
 
     if (docFields) {
-      console.log("🔗 Matching requested fields with Azure extracted fields (TOP 3):")
+      console.log("🔗 Matching requested fields with Azure extracted fields (TOP 4):")
       const dataToSave = docFields
         .map((field: any) => {
-          const top3Matches = findTop3AzureFields(field.name)
+          const top4Matches = findTop4AzureFields(field.name)
           
           // Helper to extract value from Azure field
           const extractValue = (azureField: any): string | null => {
@@ -414,7 +421,7 @@ Deno.serve(async (req) => {
             return { pageNumber, boundingBox, labelPageNumber, labelBoundingBox }
           }
           
-          // Process top 3 matches
+          // Process top 4 matches: first is primary, next 3 are alternatives
           const top3Values: string[] = []
           const top3Confidences: number[] = []
           const top3PageNumbers: (number | null)[] = []
@@ -430,22 +437,15 @@ Deno.serve(async (req) => {
           let bestLabelPageNumber = null
           let bestLabelBoundingBox = null
           
-          console.log(`  "${field.name}" → Found ${top3Matches.length} match(es):`)
+          console.log(`  "${field.name}" → Found ${top4Matches.length} match(es):`)
           
-          top3Matches.forEach((match, index) => {
+          top4Matches.forEach((match, index) => {
             const value = extractValue(match.data)
             const confidence = match.data?.confidence || null
             const boundingData = extractBoundingData(match.data)
             
             if (value) {
-              top3Values.push(value)
-              top3Confidences.push(confidence || 0)
-              top3PageNumbers.push(boundingData.pageNumber)
-              top3BoundingBoxes.push(boundingData.boundingBox)
-              top3LabelPageNumbers.push(boundingData.labelPageNumber)
-              top3LabelBoundingBoxes.push(boundingData.labelBoundingBox)
-              
-              // First match is the best match
+              // First match is the best match (primary value)
               if (index === 0) {
                 bestValue = value
                 bestConfidence = confidence
@@ -453,6 +453,14 @@ Deno.serve(async (req) => {
                 bestBoundingBox = boundingData.boundingBox
                 bestLabelPageNumber = boundingData.labelPageNumber
                 bestLabelBoundingBox = boundingData.labelBoundingBox
+              } else {
+                // Indices 1-3 are the alternatives shown when user clicks thumbs down
+                top3Values.push(value)
+                top3Confidences.push(confidence || 0)
+                top3PageNumbers.push(boundingData.pageNumber)
+                top3BoundingBoxes.push(boundingData.boundingBox)
+                top3LabelPageNumbers.push(boundingData.labelPageNumber)
+                top3LabelBoundingBoxes.push(boundingData.labelBoundingBox)
               }
               
               console.log(`    ${index + 1}. "${match.fieldName}" = "${value}" ✅ (${match.matchType}, score: ${match.matchScore}, confidence: ${confidence ? (confidence * 100).toFixed(1) + '%' : 'N/A'})`)
@@ -465,8 +473,10 @@ Deno.serve(async (req) => {
             }
           })
           
-          if (top3Matches.length === 0) {
+          if (top4Matches.length === 0) {
             console.log(`    ❌ No matches found`)
+          } else if (top4Matches.length === 1) {
+            console.log(`    ⚠️  Only 1 match found - no alternatives available`)
           }
           
           return {
@@ -484,7 +494,7 @@ Deno.serve(async (req) => {
             boundingBox: bestBoundingBox,
             labelPageNumber: bestLabelPageNumber,
             labelBoundingBox: bestLabelBoundingBox,
-            found: top3Matches.length > 0 && bestValue !== ''
+            found: top4Matches.length > 0 && bestValue !== ''
           }
         })
 

@@ -92,6 +92,7 @@ Deno.serve(async (req) => {
       .select(`
         id,
         value,
+        field_id,
         top3_values,
         top3_confidences,
         top3_page_numbers,
@@ -161,13 +162,20 @@ Deno.serve(async (req) => {
       // Get the selected value and its metadata
       const selectedValue = currentData.top3_values[selectedIndex!]
       const selectedConfidence = currentData.top3_confidences?.[selectedIndex!] || null
+      const selectedPageNumber = currentData.top3_page_numbers?.[selectedIndex!] || null
+      const selectedBoundingBox = currentData.top3_bounding_boxes?.[selectedIndex!] || null
+      const selectedLabelPageNumber = currentData.top3_label_page_numbers?.[selectedIndex!] || null
+      const selectedLabelBoundingBox = currentData.top3_label_bounding_boxes?.[selectedIndex!] || null
       
       console.log(`  - Selected value: "${selectedValue}"`)
       console.log(`  - Selected confidence: ${selectedConfidence}`)
+      console.log(`  - Selected page: ${selectedPageNumber}`)
+      console.log(`  - Has bounding box: ${selectedBoundingBox ? '✅' : '❌'}`)
+      console.log(`  - Has label bounding box: ${selectedLabelBoundingBox ? '✅' : '❌'}`)
 
       updateData.value = selectedValue
       updateData.confidence = selectedConfidence
-      updateData.user_feedback = 'thumbs_up'  // Automatically mark as thumbs up after selection
+      updateData.user_feedback = 'thumbs_down'  // Mark as thumbs_down since user rejected original
       updateData.is_manually_selected = true
       updateData.selected_from_top3_index = selectedIndex
     }
@@ -186,6 +194,36 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: "Failed to update feedback", details: updateError }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       )
+    }
+
+    // If user selected from top 3, also update document_fields with new bounding box data
+    if (action === 'select_from_top3' && currentData.field_id) {
+      console.log("📝 Updating document_fields with new bounding box data...")
+      
+      const selectedPageNumber = currentData.top3_page_numbers?.[selectedIndex!] || null
+      const selectedBoundingBox = currentData.top3_bounding_boxes?.[selectedIndex!] || null
+      const selectedLabelPageNumber = currentData.top3_label_page_numbers?.[selectedIndex!] || null
+      const selectedLabelBoundingBox = currentData.top3_label_bounding_boxes?.[selectedIndex!] || null
+      
+      const fieldUpdateData: any = {}
+      if (selectedPageNumber) fieldUpdateData.page_number = selectedPageNumber
+      if (selectedBoundingBox) fieldUpdateData.bounding_box = selectedBoundingBox
+      if (selectedLabelPageNumber) fieldUpdateData.label_page_number = selectedLabelPageNumber
+      if (selectedLabelBoundingBox) fieldUpdateData.label_bounding_box = selectedLabelBoundingBox
+      
+      if (Object.keys(fieldUpdateData).length > 0) {
+        const { error: fieldUpdateError } = await supabaseClient
+          .from("document_fields")
+          .update(fieldUpdateData)
+          .eq("id", currentData.field_id)
+        
+        if (fieldUpdateError) {
+          console.error("⚠️ Failed to update document_fields:", fieldUpdateError)
+          // Don't fail the whole request, just log the error
+        } else {
+          console.log("✅ Document fields updated with new bounding box data")
+        }
+      }
     }
 
     console.log("✅ Feedback updated successfully!")

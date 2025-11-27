@@ -11,9 +11,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
 import { useRouter, useParams } from "next/navigation"
-import { ArrowLeft, Plus, Eye, Trash2, Download, RotateCcw } from "lucide-react"
+import { ArrowLeft, Plus, Eye, Trash2, Download, RotateCcw, ThumbsUp, ThumbsDown, Edit, X } from "lucide-react"
 import Navbar from "@/components/navbar"
 import FieldValidationModal from "@/components/field-validation-modal"
+import { updateFieldFeedback } from "@/lib/edge-functions"
 
 // Force dynamic rendering
 export const dynamicParams = true
@@ -42,22 +43,15 @@ interface ExtractedField {
   boundingBox?: number[]
   labelPageNumber?: number
   labelBoundingBox?: number[]
-}
-
-interface Recommendation {
-  id: string
-  missingFieldId: string
-  missingFieldName: string
-  fieldName: string
-  fieldValue: string
-  confidence: number
-  relevanceScore: number
-  fieldType: string
-  rank: number
-  pageNumber?: number
-  boundingBox?: number[]
-  labelPageNumber?: number
-  labelBoundingBox?: number[]
+  top3Values?: string[]
+  top3Confidences?: number[]
+  top3PageNumbers?: number[]
+  top3BoundingBoxes?: number[][]
+  top3LabelPageNumbers?: number[]
+  top3LabelBoundingBoxes?: number[][]
+  userFeedback?: string | null
+  isManuallySelected?: boolean
+  selectedFromTop3Index?: number | null
 }
 
 interface Document {
@@ -67,7 +61,6 @@ interface Document {
   status: string
   createdAt: string
   processedAt: string | null
-  originalFilename?: string | null
 }
 
 export default function DocumentDetailPage() {
@@ -75,7 +68,6 @@ export default function DocumentDetailPage() {
   const documentId = params.id as string
   const [document, setDocument] = useState<Document | null>(null)
   const [fields, setFields] = useState<ExtractedField[]>([])
-  const [recommendations, setRecommendations] = useState<Recommendation[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isProcessing, setIsProcessing] = useState(false)
   const [newFieldName, setNewFieldName] = useState("")
@@ -84,6 +76,10 @@ export default function DocumentDetailPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [pdfSidebarOpen, setPdfSidebarOpen] = useState(false)
   const [selectedFieldForPDF, setSelectedFieldForPDF] = useState<ExtractedField | null>(null)
+  const [feedbackLoading, setFeedbackLoading] = useState<string | null>(null)
+  const [editingField, setEditingField] = useState<ExtractedField | null>(null)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editFieldType, setEditFieldType] = useState('')
   const router = useRouter()
   const supabase = createClient()
   
@@ -113,64 +109,10 @@ export default function DocumentDetailPage() {
         setDocument(extractedData.document)
         setFields(extractedData.extractedFields || [])
       }
-
-      // Fetch recommendations
-      await fetchRecommendations()
     } catch (error) {
       console.error("Failed to fetch data:", error)
     } finally {
       setIsLoading(false)
-    }
-  }
-
-  const fetchRecommendations = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("field_recommendations")
-        .select(`
-          id,
-          missing_field_id,
-          missing_field_name,
-          recommended_field_name,
-          field_value,
-          confidence,
-          relevance_score,
-          field_type,
-          rank,
-          page_number,
-          bounding_box,
-          label_page_number,
-          label_bounding_box
-        `)
-        .eq("document_id", documentId)
-        .order("missing_field_id", { ascending: true })
-        .order("rank", { ascending: true })
-
-      if (error) {
-        console.error("Failed to fetch recommendations:", error)
-        return
-      }
-
-      // Transform to match interface
-      const transformedData = data?.map(rec => ({
-        id: rec.id,
-        missingFieldId: rec.missing_field_id,
-        missingFieldName: rec.missing_field_name,
-        fieldName: rec.recommended_field_name,
-        fieldValue: rec.field_value,
-        confidence: rec.confidence,
-        relevanceScore: rec.relevance_score,
-        fieldType: rec.field_type,
-        rank: rec.rank,
-        pageNumber: rec.page_number,
-        boundingBox: rec.bounding_box,
-        labelPageNumber: rec.label_page_number,
-        labelBoundingBox: rec.label_bounding_box,
-      })) || []
-
-      setRecommendations(transformedData)
-    } catch (error) {
-      console.error("Error fetching recommendations:", error)
     }
   }
 
@@ -234,7 +176,6 @@ export default function DocumentDetailPage() {
         documentName: document.name,
         filePath: document.storagePath,
         publicUrl: publicUrl,
-        originalFileName: document.originalFilename || document.name,
         fieldsToExtract: [{ 
           name: newFieldName, 
           type: newFieldType, 
@@ -337,7 +278,6 @@ export default function DocumentDetailPage() {
         documentName: document.name,
         filePath: document.storagePath,
         publicUrl: publicUrl,
-        originalFileName: document.originalFilename || document.name,
         fieldsToExtract: fieldsToExtract,
       })
 
@@ -361,93 +301,6 @@ export default function DocumentDetailPage() {
   }
 
   const handleFieldValueChange = async (fieldId: string, newValue: string) => {
-    try {
-      const { error } = await supabase
-        .from("extracted_data")
-        .update({ value: newValue })
-        .eq("field_id", fieldId)
-
-      if (error) throw error
-
-      // Update local state
-      setFields(prevFields =>
-        prevFields.map((field) =>
-          field.fieldId === fieldId ? { ...field, value: newValue } : field
-        )
-      )
-    } catch (error) {
-      console.error("Failed to update field value:", error)
-    }
-  }
-
-  const handleAddRecommendedField = async (recommendation: Recommendation) => {
-    if (!document) return
-    setIsProcessing(true)
-
-    try {
-      // Update the existing field with the recommended value
-      const { error: dataError } = await supabase
-        .from("extracted_data")
-        .upsert({
-          document_id: documentId,
-          field_id: recommendation.missingFieldId,
-          value: recommendation.fieldValue,
-          confidence: recommendation.confidence,
-        }, { 
-          onConflict: "document_id,field_id" 
-        })
-
-      if (dataError) throw dataError
-
-      // Update the document_fields table with bounding box info
-      const updatePayload: Record<string, unknown> = {}
-      if (recommendation.pageNumber) updatePayload.page_number = recommendation.pageNumber
-      if (recommendation.boundingBox) updatePayload.bounding_box = recommendation.boundingBox
-      if (recommendation.labelPageNumber) updatePayload.label_page_number = recommendation.labelPageNumber
-      if (recommendation.labelBoundingBox) updatePayload.label_bounding_box = recommendation.labelBoundingBox
-
-      if (Object.keys(updatePayload).length > 0) {
-        await supabase
-          .from("document_fields")
-          .update(updatePayload)
-          .eq("id", recommendation.missingFieldId)
-      }
-
-      // Remove this specific recommendation
-      const { error: deleteError } = await supabase
-        .from("field_recommendations")
-        .delete()
-        .eq("id", recommendation.id)
-
-      if (deleteError) console.error("Failed to delete recommendation:", deleteError)
-
-      // Update local state
-      setFields(fields.map(f => 
-        f.fieldId === recommendation.missingFieldId 
-          ? { 
-              ...f, 
-              value: recommendation.fieldValue, 
-              confidence: recommendation.confidence,
-              pageNumber: recommendation.pageNumber,
-              boundingBox: recommendation.boundingBox,
-              labelPageNumber: recommendation.labelPageNumber,
-              labelBoundingBox: recommendation.labelBoundingBox
-            }
-          : f
-      ))
-      
-      // Remove recommendation from local state
-      setRecommendations(recommendations.filter(r => r.id !== recommendation.id))
-      
-    } catch (error) {
-      console.error("Failed to add recommended field:", error)
-      alert("Failed to add recommended field. Please try again.")
-    } finally {
-      setIsProcessing(false)
-    }
-  }
-
-  const handleUpdateField = async (fieldId: string, newValue: string) => {
     try {
       const { data: existingData } = await supabase
         .from("extracted_data")
@@ -483,6 +336,146 @@ export default function DocumentDetailPage() {
     }
   }
 
+  const handleEditFieldType = async () => {
+    if (!editingField) return
+    
+    try {
+      const { error } = await supabase
+        .from("document_fields")
+        .update({ type: editFieldType })
+        .eq("id", editingField.fieldId)
+      
+      if (error) throw error
+      
+      // Update local state
+      setFields(fields.map(f => 
+        f.fieldId === editingField.fieldId 
+          ? { ...f, fieldType: editFieldType }
+          : f
+      ))
+      
+      setIsEditModalOpen(false)
+      setEditingField(null)
+    } catch (error) {
+      console.error('Failed to update field type:', error)
+      alert('Failed to update field type')
+    }
+  }
+
+  const handleThumbsUp = async (field: ExtractedField) => {
+    setFeedbackLoading(field.id)
+    try {
+      const { data, error } = await updateFieldFeedback({
+        extractedDataId: field.id,
+        action: 'thumbs_up'
+      })
+      
+      if (error) throw new Error(error)
+      
+      // Update local state
+      setFields(fields.map(f => 
+        f.id === field.id 
+          ? { ...f, userFeedback: 'thumbs_up' }
+          : f
+      ))
+    } catch (error) {
+      console.error('Failed to update feedback:', error)
+      alert('Failed to update feedback')
+    } finally {
+      setFeedbackLoading(null)
+    }
+  }
+
+  const handleThumbsDown = async (field: ExtractedField) => {
+    // Build alternatives array: if user already selected from top3, show all 4 options
+    let alternatives: Array<{ value: string; confidence: number; pageNumber: number; index: number }> = []
+    
+    if (field.isManuallySelected && field.selectedFromTop3Index !== null && field.top3Values) {
+      // User previously selected an alternative, show all 4 options
+      // Find the original first value from top3Values based on selectedFromTop3Index
+      const allValues = field.top3Values || []
+      
+      if (allValues.length > 0) {
+        // Add all available values with their metadata
+        allValues.forEach((val, idx) => {
+          alternatives.push({
+            value: val,
+            confidence: field.top3Confidences?.[idx] || 0,
+            pageNumber: field.top3PageNumbers?.[idx] || 1,
+            index: idx
+          })
+        })
+      }
+    } else if (field.top3Values && field.top3Values.length > 0) {
+      // First time clicking thumbs down, show only the 3 alternatives
+      alternatives = field.top3Values.map((val, idx) => ({
+        value: val,
+        confidence: field.top3Confidences?.[idx] || 0,
+        pageNumber: field.top3PageNumbers?.[idx] || 1,
+        index: idx
+      }))
+    }
+    
+    if (alternatives.length === 0) {
+      alert('No alternative values available for this field')
+      return
+    }
+    
+    // Show modal with alternatives
+    setSelectedField(field)
+    setIsModalOpen(true)
+  }
+
+  const handleSelectAlternative = async (index: number) => {
+    if (!selectedField) return
+    
+    setFeedbackLoading(selectedField.id)
+    try {
+      // First mark as thumbs_down, then select alternative
+      const { data, error } = await updateFieldFeedback({
+        extractedDataId: selectedField.id,
+        action: 'select_from_top3',
+        selectedIndex: index
+      })
+      
+      if (error) throw new Error(error)
+      
+      // Get the new value and metadata from selected alternative
+      const newValue = selectedField.top3Values?.[index]
+      const newConfidence = selectedField.top3Confidences?.[index]
+      const newPageNumber = selectedField.top3PageNumbers?.[index]
+      const newBoundingBox = selectedField.top3BoundingBoxes?.[index]
+      const newLabelPageNumber = selectedField.top3LabelPageNumbers?.[index]
+      const newLabelBoundingBox = selectedField.top3LabelBoundingBoxes?.[index]
+      
+      // Update local state with new value and bounding box data for PDF viewer
+      setFields(fields.map(f => 
+        f.id === selectedField.id 
+          ? { 
+              ...f, 
+              value: newValue || f.value,
+              confidence: newConfidence !== undefined ? newConfidence : f.confidence,
+              pageNumber: newPageNumber || f.pageNumber,
+              boundingBox: newBoundingBox || f.boundingBox,
+              labelPageNumber: newLabelPageNumber || f.labelPageNumber,
+              labelBoundingBox: newLabelBoundingBox || f.labelBoundingBox,
+              userFeedback: 'thumbs_down',
+              isManuallySelected: true,
+              selectedFromTop3Index: index
+            }
+          : f
+      ))
+      
+      setIsModalOpen(false)
+      setSelectedField(null)
+    } catch (error) {
+      console.error('Failed to select alternative:', error)
+      alert('Failed to select alternative value')
+    } finally {
+      setFeedbackLoading(null)
+    }
+  }
+
   const handleExportData = () => {
     const csvContent = [
       ["Field Name", "Type", "Value", "Confidence"],
@@ -508,7 +501,7 @@ export default function DocumentDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background text-gray-900 dark:text-white">
+      <div className="min-h-screen bg-white dark:bg-slate-900 text-gray-900 dark:text-white">
         <Navbar />
         <div className="flex items-center justify-center h-96">
           <p className="text-gray-600 dark:text-gray-400">Loading document...</p>
@@ -519,7 +512,7 @@ export default function DocumentDetailPage() {
 
   if (!document) {
     return (
-      <div className="min-h-screen bg-background text-gray-900 dark:text-white">
+      <div className="min-h-screen bg-white dark:bg-slate-900 text-gray-900 dark:text-white">
         <Navbar />
         <div className="flex items-center justify-center h-96">
           <p className="text-gray-600 dark:text-gray-400">Document not found</p>
@@ -529,14 +522,14 @@ export default function DocumentDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-gray-900 dark:text-white">
+    <div className="min-h-screen bg-white dark:bg-slate-900 text-gray-900 dark:text-white">
       <Navbar />
       <SessionWarningModal open={showWarning} onExtend={extendSession} />
 
       <div className={`transition-all duration-300 ease-out ${pdfSidebarOpen ? "lg:pr-[50%]" : "pr-0"}`}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
           {/* Header */}
-          <Link href="/documents" className="flex items-center gap-2 text-gray-900 dark:text-white hover:underline mb-6">
+          <Link href="/documents" className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline mb-6">
           <ArrowLeft className="h-4 w-4" />
           Back to Documents
         </Link>
@@ -545,7 +538,7 @@ export default function DocumentDetailPage() {
           <div>
             <h1 className="text-3xl sm:text-4xl font-bold mb-2">{document.name}</h1>
             <p className="text-gray-600 dark:text-gray-400">
-              Status: <span className={`capitalize font-medium ${isProcessing || document.status === 'processing' ? 'text-gray-700 dark:text-gray-300' : 'text-gray-900 dark:text-white'}`}>
+              Status: <span className={`capitalize font-medium ${isProcessing || document.status === 'processing' ? 'text-yellow-500 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'}`}>
                 {isProcessing ? 'processing' : document.status}
               </span> • {fields.length} field{fields.length !== 1 ? "s" : ""}
             </p>
@@ -604,7 +597,7 @@ export default function DocumentDetailPage() {
                       <option value="url">URL</option>
                     </select>
                   </div>
-                  <Button type="submit" className="gap-2 w-full bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black disabled:opacity-60" disabled={isProcessing}>
+                  <Button type="submit" className="gap-2 w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white disabled:opacity-60" disabled={isProcessing}>
                     <Plus className="h-4 w-4" />
                     {isProcessing ? 'Adding & Extracting...' : 'Add Field'}
                   </Button>
@@ -624,7 +617,7 @@ export default function DocumentDetailPage() {
                 fields.map((field) => (
                   <Card 
                     key={field.id} 
-                    className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:shadow-lg hover:border-gray-300 dark:hover:border-slate-600 transition-all duration-200 cursor-pointer" 
+                    className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:shadow-md dark:hover:shadow-lg transition" 
                     onClick={() => {
                       setSelectedFieldForPDF(field)
                       setPdfSidebarOpen(true)
@@ -635,7 +628,7 @@ export default function DocumentDetailPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2 flex-wrap">
                             <p 
-                              className="text-sm font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:text-gray-900 dark:hover:text-white transition"
+                              className="text-sm font-semibold text-gray-700 dark:text-gray-300 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition"
                               onMouseEnter={() => {
                                 // Only show sidebar on desktop (lg and up) when hovering field name
                                 if (window.innerWidth >= 1024) {
@@ -647,13 +640,13 @@ export default function DocumentDetailPage() {
                               {field.fieldName}
                             </p>
                             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                              field.fieldType === 'currency' ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200' :
-                              field.fieldType === 'date' ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200' :
-                              field.fieldType === 'number' ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200' :
-                              field.fieldType === 'email' ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200' :
-                              field.fieldType === 'phone' ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200' :
-                              field.fieldType === 'address' ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200' :
-                              field.fieldType === 'url' ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200' :
+                              field.fieldType === 'currency' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' :
+                              field.fieldType === 'date' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' :
+                              field.fieldType === 'number' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' :
+                              field.fieldType === 'email' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300' :
+                              field.fieldType === 'phone' ? 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300' :
+                              field.fieldType === 'address' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' :
+                              field.fieldType === 'url' ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300' :
                               'bg-gray-100 text-gray-700 dark:bg-gray-900/40 dark:text-gray-300'
                             }`}>
                               {field.fieldType}
@@ -661,95 +654,98 @@ export default function DocumentDetailPage() {
                           </div>
                           <p className="text-base font-medium break-words text-gray-900 dark:text-white">{field.value || "Not extracted"}</p>
                           {field.confidence && (
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                               Confidence: {(field.confidence * 100).toFixed(0)}%
+                              {field.isManuallySelected && (
+                                <span className="ml-2 text-blue-600 dark:text-blue-400">• Manually selected</span>
+                              )}
                             </p>
                           )}
-                          
-                          {/* Field-specific recommendations */}
-                          {(!field.value || field.value === "Not extracted") && recommendations.filter(rec => rec.missingFieldId === field.fieldId).length > 0 && (
-                            <div className="mt-3 space-y-2">
-                              <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">
-                                💡 Suggestions from document:
-                              </p>
-                              {recommendations
-                                .filter(rec => rec.missingFieldId === field.fieldId)
-                                .map((rec, idx) => (
-                                  <div
-                                    key={rec.id}
-                                    className="flex items-center justify-between gap-2 p-2 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded text-sm"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-                                        {rec.fieldName}
-                                      </p>
-                                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                        {rec.fieldValue}
-                                      </p>
-                                      <p className="text-xs text-gray-600 dark:text-gray-400">
-                                        {(rec.confidence * 100).toFixed(0)}% confidence · {rec.relevanceScore}% relevance
-                                      </p>
-                                    </div>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        handleAddRecommendedField(rec)
-                                      }}
-                                      disabled={isProcessing}
-                                      className="shrink-0 h-7 px-2 gap-1 text-xs bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white disabled:opacity-60"
-                                    >
-                                      <Plus className="h-3 w-3" />
-                                      Use
-                                    </Button>
-                                  </div>
-                                ))}
+                        </div>
+                        <div className="flex flex-col gap-2 shrink-0">
+                          {/* Top row: Edit and Delete buttons */}
+                          <div className="flex gap-2">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setSelectedFieldForPDF(field)
+                                setPdfSidebarOpen(true)
+                              }}
+                              className="lg:hidden gap-2 whitespace-nowrap bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white"
+                              title="View in PDF"
+                            >
+                              <Eye className="h-4 w-4" />
+                              <span className="hidden sm:inline">View PDF</span>
+                              <span className="sm:hidden">View</span>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setEditingField(field)
+                                setEditFieldType(field.fieldType)
+                                setIsEditModalOpen(true)
+                              }}
+                              className="hidden sm:flex gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-slate-700"
+                              title="Edit field type"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDeleteField(field.fieldId)
+                              }}
+                              className="hidden sm:flex text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950"
+                              title="Delete field"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          {/* Bottom row: Thumbs up/down buttons */}
+                          {field.value && field.value !== "Not extracted" && field.value !== "Processing..." && (
+                            <div className="flex gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleThumbsUp(field)
+                                }}
+                                disabled={feedbackLoading === field.id || field.userFeedback !== null}
+                                className={`p-1.5 rounded-md transition-all flex-1 ${
+                                  field.userFeedback === 'thumbs_up'
+                                    ? 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400 cursor-not-allowed'
+                                    : field.userFeedback !== null
+                                    ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                                    : 'text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:text-green-400 dark:hover:bg-green-900/20'
+                                }`}
+                                title={field.userFeedback !== null ? 'Feedback already given' : 'Approve value'}
+                              >
+                                <ThumbsUp className="h-4 w-4 mx-auto" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleThumbsDown(field)
+                                }}
+                                disabled={feedbackLoading === field.id || field.userFeedback !== null}
+                                className={`p-1.5 rounded-md transition-all flex-1 ${
+                                  field.userFeedback === 'thumbs_down'
+                                    ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 cursor-not-allowed'
+                                    : field.userFeedback !== null
+                                    ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                                    : 'text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/20'
+                                }`}
+                                title={field.userFeedback !== null ? 'Feedback already given' : 'See alternatives'}
+                              >
+                                <ThumbsDown className="h-4 w-4 mx-auto" />
+                              </button>
                             </div>
                           )}
-                        </div>
-                        <div className="flex gap-2 shrink-0">
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setSelectedFieldForPDF(field)
-                              setPdfSidebarOpen(true)
-                            }}
-                            className="lg:hidden gap-2 whitespace-nowrap bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black"
-                            title="View in PDF"
-                          >
-                            <Eye className="h-4 w-4" />
-                            <span className="hidden sm:inline">View PDF</span>
-                            <span className="sm:hidden">View</span>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setSelectedField(field)
-                              setIsModalOpen(true)
-                            }}
-                            className="hidden sm:flex gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-slate-700"
-                            title="Edit value"
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleDeleteField(field.fieldId)
-                            }}
-                            className="hidden sm:flex text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30"
-                            title="Delete field"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
                         </div>
                       </div>
                     </CardContent>
@@ -781,25 +777,116 @@ export default function DocumentDetailPage() {
                   </div>
                 )}
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Total Fields</p>
-                  <p className="font-medium text-gray-900 dark:text-white">{fields.length}</p>
+                  <p className="text-sm text-muted-foreground">Total Fields</p>
+                  <p className="font-medium">{fields.length}</p>
                 </div>
               </CardContent>
             </Card>
           </div>
         </div>
 
-        {/* Validation Modal */}
+        {/* Edit Field Type Modal */}
+        {editingField && (
+          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 rounded-lg max-w-md w-full shadow-2xl">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-slate-700">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Edit Field Type</h2>
+                <button
+                  onClick={() => {
+                    setIsEditModalOpen(false)
+                    setEditingField(null)
+                  }}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                </button>
+              </div>
+              <div className="p-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Field Name
+                    </label>
+                    <input
+                      type="text"
+                      value={editingField.fieldName}
+                      disabled
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Field Type
+                    </label>
+                    <select
+                      value={editFieldType}
+                      onChange={(e) => setEditFieldType(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
+                    >
+                      <option value="text">Text</option>
+                      <option value="number">Number</option>
+                      <option value="date">Date</option>
+                      <option value="email">Email</option>
+                      <option value="phone">Phone</option>
+                      <option value="currency">Currency</option>
+                      <option value="address">Address</option>
+                      <option value="url">URL</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-slate-700">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditModalOpen(false)
+                    setEditingField(null)
+                  }}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleEditFieldType}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Save
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Validation Modal - Show Top 3 Alternatives */}
         {selectedField && (
           <FieldValidationModal
             isOpen={isModalOpen}
-            field={selectedField}
-            documentUrl={document.storagePath}
+            fieldName={selectedField.fieldName}
+            currentValue={selectedField.value}
+            alternatives={
+              selectedField.isManuallySelected && selectedField.selectedFromTop3Index !== null
+                ? // Show all values if user already selected an alternative
+                  (selectedField.top3Values?.map((value, idx) => ({
+                    value,
+                    confidence: selectedField.top3Confidences?.[idx] || 0,
+                    pageNumber: selectedField.top3PageNumbers?.[idx] || 1,
+                    isOriginal: false, // All are from Azure
+                    index: idx
+                  })) || [])
+                : // First time, show only the 3 alternatives
+                  (selectedField.top3Values?.map((value, idx) => ({
+                    value,
+                    confidence: selectedField.top3Confidences?.[idx] || 0,
+                    pageNumber: selectedField.top3PageNumbers?.[idx] || 1,
+                    isOriginal: false,
+                    index: idx
+                  })) || [])
+            }
             onClose={() => {
               setIsModalOpen(false)
               setSelectedField(null)
             }}
-            onFieldValueChange={handleFieldValueChange}
+            onSelectAlternative={handleSelectAlternative}
           />
         )}
         </div>
