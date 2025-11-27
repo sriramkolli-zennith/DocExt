@@ -25,6 +25,9 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "jsr:@supabase/supabase-js@2": [
+        "./supabase/jsr-supabase-shim"
       ]
     }
   },
@@ -32,11 +35,11 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
+    "**/*.d.ts",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules",
-    "supabase/functions"
+    "node_modules"
   ]
 }

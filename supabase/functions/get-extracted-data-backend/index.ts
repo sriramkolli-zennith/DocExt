@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
       fieldDescription: item.document_fields.description,
       value: item.value,
       confidence: item.confidence,
-      // Top 3 alternatives
+      // Top alternatives (currently up to 4 entries)
       top3Values: item.top3_values || [],
       top3Confidences: item.top3_confidences || [],
       top3PageNumbers: item.top3_page_numbers || [],

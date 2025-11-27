@@ -24,7 +24,7 @@ COMMENT ON COLUMN public.extracted_data.top3_label_page_numbers IS 'Array of top
 COMMENT ON COLUMN public.extracted_data.top3_label_bounding_boxes IS 'Array of top 3 label bounding boxes: [[x1,y1,x2,y2,...], [...], [...]]';
 COMMENT ON COLUMN public.extracted_data.user_feedback IS 'User feedback: thumbs_up, thumbs_down, or NULL';
 COMMENT ON COLUMN public.extracted_data.is_manually_selected IS 'TRUE if user selected value from top3 alternatives';
-COMMENT ON COLUMN public.extracted_data.selected_from_top3_index IS 'Index (0-2) of value selected from top3 array';
+COMMENT ON COLUMN public.extracted_data.selected_from_top3_index IS 'Index (0-3) of value selected from top3 array';
 COMMENT ON COLUMN public.extracted_data.feedback_timestamp IS 'Timestamp when user provided feedback';
 
 -- Create index for faster feedback queries

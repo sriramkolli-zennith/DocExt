@@ -1,8 +1,8 @@
-# Top 3 Alternatives Feature - Deployment Guide
+# Top Alternatives (Up to 4) - Deployment Guide
 
 ## Overview
 This feature enhances the document extraction system to:
-- Extract and store top 3 matching values for each field (not just the best match)
+- Extract and store up to four matching values for each field (not just the best match)
 - Allow users to approve (thumbs up) or reject (thumbs down) extracted values
 - Show alternative values when users click thumbs down
 - Highlight both field values AND labels in PDF viewer with different colors
@@ -14,7 +14,7 @@ This feature enhances the document extraction system to:
 **Location:** `/MIGRATION_TOP3_FEEDBACK.sql`
 
 Added columns to `extracted_data` table:
-- `top3_values` (JSONB): Array of top 3 extracted values
+- `top3_values` (JSONB): Array of up to 4 extracted values (column name retained for compatibility)
 - `top3_confidences` (JSONB): Confidence scores for each value
 - `top3_page_numbers` (JSONB): Page numbers for each value
 - `top3_bounding_boxes` (JSONB): Bounding boxes for each value
@@ -22,7 +22,7 @@ Added columns to `extracted_data` table:
 - `top3_label_bounding_boxes` (JSONB): Bounding boxes for field labels
 - `user_feedback` (TEXT): 'thumbs_up', 'thumbs_down', or NULL
 - `is_manually_selected` (BOOLEAN): TRUE if user picked from alternatives
-- `selected_from_top3_index` (INTEGER): Which alternative was selected (0, 1, or 2)
+- `selected_from_top3_index` (INTEGER): Which alternative was selected (0–3)
 - `feedback_timestamp` (TIMESTAMPTZ): When feedback was given
 
 ### 2. Backend Edge Functions
@@ -32,8 +32,8 @@ Added columns to `extracted_data` table:
 
 Changes:
 - Added `calculateMatchScore()` function with intelligent scoring (0-100 scale)
-- Replaced `findAzureField()` with `findTop3AzureFields()`
-- Now finds top 3 matches instead of just best match
+- Replaced `findAzureField()` with `findTopAzureFields()`
+- Now finds up to 4 matches instead of just best match
 - Stores all 6 new arrays for each field
 - Preserves label bounding boxes from Azure response
 
@@ -74,7 +74,7 @@ Includes:
 
 New modal shows:
 - Current extracted value
-- Top 3 alternatives with confidence scores and page numbers
+- Up to four alternatives with confidence scores and page numbers
 - Visual confidence bars
 - Click to select any alternative
 - Clean, modern UI
@@ -157,7 +157,7 @@ npm run deploy
 
 # Or commit and push to trigger auto-deployment
 git add .
-git commit -m "feat: Add top 3 alternatives with user feedback"
+git commit -m "feat: Add top alternatives with user feedback"
 git push origin main
 ```
 
@@ -166,7 +166,7 @@ git push origin main
 1. **Test Document Upload:**
    - Upload a new document
    - Check that extraction completes successfully
-   - Verify top 3 values are saved (check database)
+  - Verify top alternatives are saved (check database)
 
 2. **Test PDF Viewer:**
    - Click on any extracted field
@@ -191,7 +191,7 @@ git push origin main
 Check that data is being stored correctly:
 
 ```sql
--- View top 3 data for a specific document
+-- View top alternative data for a specific document
 SELECT 
   field_id,
   value,
@@ -243,7 +243,7 @@ supabase functions logs update-field-feedback --project-ref lputifqvrradmfedheov
 
 In `process-document-backend` logs:
 ```
-📊 Top 3 matches for [field name]:
+📊 Top matches (up to 4) for [field name]:
   1. [value] (score: XX, confidence: X.XX)
   2. [value] (score: XX, confidence: X.XX)
   3. [value] (score: XX, confidence: X.XX)
@@ -255,7 +255,7 @@ In `update-field-feedback` logs:
 📥 Request payload:
   - Extracted Data ID: [id]
   - Action: [thumbs_up/thumbs_down/select_from_top3]
-  - Selected Index: [0/1/2]
+  - Selected Index: [0/1/2/3]
 ✅ Processing [action] feedback
 💾 Updating extracted_data record...
 ✅ Feedback updated successfully!
@@ -297,7 +297,7 @@ git checkout main
 2. **View Results** → See extracted values with confidence scores
 3. **Approve Good Values** → Click 👍 (turns green)
 4. **Reject Bad Values** → Click 👎 (shows alternatives modal)
-5. **Select Alternative** → Choose correct value from top 3 options
+5. **Select Alternative** → Choose the correct value from up to 4 options
 6. **View in PDF** → Click field name → PDF opens with highlights:
    - Yellow/orange = extracted value location
    - Blue = field label location
@@ -310,7 +310,7 @@ The matching algorithm uses a sophisticated scoring system:
 - Falls back to case-insensitive matching
 - Handles special characters and formatting differences
 - Considers word overlap for partial matches
-- Always returns 3 alternatives (or fewer if not available)
+- Returns up to 4 alternatives (or fewer if not available)
 
 The system is designed to help improve extraction accuracy over time by learning from user feedback.
 

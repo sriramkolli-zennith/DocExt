@@ -22,6 +22,8 @@ interface PDFViewerSidebarProps {
   boundingBox?: number[]
   labelPageNumber?: number
   labelBoundingBox?: number[]
+  autoCloseEnabled: boolean
+  autoCloseToken: number
 }
 
 type HighlightTarget = {
@@ -41,6 +43,8 @@ export function PDFViewerSidebar({
   boundingBox,
   labelPageNumber,
   labelBoundingBox,
+  autoCloseEnabled,
+  autoCloseToken,
 }: PDFViewerSidebarProps) {
   const [numPages, setNumPages] = useState<number>(0)
   const [currentPage, setCurrentPage] = useState<number>(1)
@@ -221,6 +225,39 @@ export function PDFViewerSidebar({
     setTimeout(() => animatePulse(), 200)
   }, [])
 
+  const clearTimers = useCallback(() => {
+    if (autoCloseTimerRef.current) {
+      clearTimeout(autoCloseTimerRef.current)
+      autoCloseTimerRef.current = null
+    }
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current)
+      countdownIntervalRef.current = null
+    }
+  }, [])
+
+  const startAutoCloseTimer = useCallback(() => {
+    if (!autoCloseEnabled) return
+    clearTimers()
+    setCountdown(7)
+
+    countdownIntervalRef.current = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearTimers()
+          onClose()
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    autoCloseTimerRef.current = setTimeout(() => {
+      clearTimers()
+      onClose()
+    }, 7000)
+  }, [autoCloseEnabled, clearTimers, onClose])
+
   const drawAllCurrentAnnotations = useCallback(() => {
     const annotations = latestAnnotationsRef.current
     if (annotations.length === 0) {
@@ -285,28 +322,6 @@ export function PDFViewerSidebar({
   )
 
   // Function to start auto-close timer after scroll completes
-  const clearTimers = useCallback(() => {
-    if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current)
-    if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current)
-  }, [])
-
-  const startAutoCloseTimer = useCallback(() => {
-    clearTimers()
-    setCountdown(7)
-    
-    countdownIntervalRef.current = setInterval(() => {
-      setCountdown((prev: number) => {
-        if (prev <= 1) {
-          clearInterval(countdownIntervalRef.current!)
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-    
-    autoCloseTimerRef.current = setTimeout(onClose, 7000)
-  }, [onClose, clearTimers])
-
   // Cleanup timers and handle escape key
   useEffect(() => {
     if (!isOpen) {
@@ -322,6 +337,21 @@ export function PDFViewerSidebar({
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [isOpen, onClose, clearTimers])
 
+  useEffect(() => {
+    if (!autoCloseEnabled) {
+      clearTimers()
+      setCountdown(0)
+    }
+  }, [autoCloseEnabled, clearTimers])
+
+  useEffect(() => {
+    if (!isOpen || !autoCloseEnabled || autoCloseToken === 0) return
+    const delay = setTimeout(startAutoCloseTimer, 800)
+    return () => clearTimeout(delay)
+  }, [isOpen, autoCloseEnabled, autoCloseToken, startAutoCloseTimer])
+
+  useEffect(() => () => clearTimers(), [clearTimers])
+
   const scrollToAnnotation = useCallback((pageNum: number, bbox: number[]) => {
     const pageElement = pageRefs.current.get(pageNum)
     const container = scrollContainerRef.current
@@ -331,7 +361,6 @@ export function PDFViewerSidebar({
     const pageDimensions = pageDimensionsRef.current.get(pageNum)
     if (!pageDimensions) {
       pageElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      setTimeout(startAutoCloseTimer, 1000)
       return
     }
 
@@ -357,8 +386,7 @@ export function PDFViewerSidebar({
     const scrollTarget = pageRect.top - containerRect.top + container.scrollTop + centerY - containerRect.height / 2
 
     container.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' })
-    setTimeout(startAutoCloseTimer, 1000)
-  }, [startAutoCloseTimer])
+  }, [])
 
   // Initialize page and clear on URL change
   useEffect(() => {
@@ -532,7 +560,7 @@ export function PDFViewerSidebar({
             <span className="text-sm text-gray-700 dark:text-gray-300">
               Page {currentPage} of {numPages}
             </span>
-            {countdown > 0 && annotationTargets.length > 0 && (
+            {autoCloseEnabled && countdown > 0 && (
               <span className="text-xs font-semibold px-2 py-1 rounded bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300 animate-pulse">
                 Auto-close in {countdown}s
               </span>

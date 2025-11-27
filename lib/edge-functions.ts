@@ -120,7 +120,7 @@ export async function getExtractedData(documentId: string) {
 export async function updateFieldFeedback(params: {
   extractedDataId: string
   action: 'thumbs_up' | 'thumbs_down' | 'select_from_top3'
-  selectedIndex?: number
+  selectedIndex?: number // 0-3 indicating which alternative to apply
 }) {
   return callEdgeFunction("update-field-feedback", params)
 }

@@ -47,6 +47,7 @@ export default function DocumentDetailPage({ params }: { params: { id: string } 
   const [selectedField, setSelectedField] = useState<ExtractedField | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [feedbackLoading, setFeedbackLoading] = useState<string | null>(null)
+  const supabase = createClient()
 
   useEffect(() => {
     fetchDocumentData()
@@ -64,21 +65,26 @@ export default function DocumentDetailPage({ params }: { params: { id: string } 
         return
       }
 
+      const storagePath = data.document.storagePath
+      const publicUrl = storagePath
+        ? supabase.storage.from("documents").getPublicUrl(storagePath).data.publicUrl
+        : ""
+
       setDocument({
         id: data.document.id,
         name: data.document.name,
-        storagePath: data.document.storage_path,
-        publicUrl: data.document.public_url,
-        createdAt: data.document.created_at,
-        extractedFields: data.extractedData.map((field: any) => ({
+        storagePath,
+        publicUrl,
+        createdAt: data.document.createdAt,
+        extractedFields: (data.extractedFields || []).map((field: any) => ({
           id: field.id,
-          fieldName: field.field_name,
-          value: field.value,
+          fieldName: field.fieldName,
+          value: field.value ?? "",
           confidence: field.confidence,
-          pageNumber: field.page_number,
-          boundingBox: field.bounding_box,
-          labelPageNumber: field.label_page_number,
-          labelBoundingBox: field.label_bounding_box,
+          pageNumber: field.pageNumber,
+          boundingBox: field.boundingBox,
+          labelPageNumber: field.labelPageNumber,
+          labelBoundingBox: field.labelBoundingBox,
           top3Values: field.top3Values || [],
           top3Confidences: field.top3Confidences || [],
           top3PageNumbers: field.top3PageNumbers || [],
@@ -339,11 +345,6 @@ export default function DocumentDetailPage({ params }: { params: { id: string } 
                           Page: {field.pageNumber}
                         </span>
                       </div>
-                      {field.top3Values && field.top3Values.length > 1 && (
-                        <div className="text-xs text-gray-400 mt-1">
-                          {field.top3Values.length} alternatives available
-                        </div>
-                      )}
                     </div>
                   ))
                 )}
