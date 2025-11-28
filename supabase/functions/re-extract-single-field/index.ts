@@ -253,7 +253,7 @@ Deno.serve(async (req) => {
         .upsert({
           document_id: documentId,
           field_id: fieldId,
-          value: null,
+          value: 'Failed to Extract',
           confidence: null,
           top3_values: [],
           top3_confidences: [],

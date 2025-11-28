@@ -17,12 +17,6 @@ interface ProcessRequest {
   fieldsToExtract: FieldToExtract[]
 }
 
-interface DocumentFieldRecord {
-  id: string
-  name: string
-  type: string
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders })
@@ -195,7 +189,7 @@ Deno.serve(async (req) => {
 
     const azureEndpoint = Deno.env.get("AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT")
     const azureKey = Deno.env.get("AZURE_DOCUMENT_INTELLIGENCE_API_KEY")
-    const modelId = "prebuilt-invoice"
+    const modelId = Deno.env.get("AZURE_DOCUMENT_INTELLIGENCE_MODEL_ID") || "prebuilt-invoice"
 
     console.log("🔧 Azure Configuration:")
     console.log("  - Endpoint:", azureEndpoint ? "✅ Set" : "❌ Missing")
@@ -295,16 +289,14 @@ Deno.serve(async (req) => {
       }
     })
 
-    const { data: docFieldsData } = await supabaseClient
+    const { data: docFields } = await supabaseClient
       .from("document_fields")
       .select("id, name, type")
       .eq("document_id", docId)
 
-    const docFields: DocumentFieldRecord[] = (docFieldsData ?? []) as DocumentFieldRecord[]
-
     console.log("🔍 Fetched document fields from database:")
-    console.log(`  Total fields in DB: ${docFields.length}`)
-    docFields.forEach((field, idx) => {
+    console.log(`  Total fields in DB: ${docFields?.length || 0}`)
+    docFields?.forEach((field: any, idx: number) => {
       console.log(`  ${idx + 1}. ID: ${field.id}, Name: "${field.name}", Type: "${field.type}"`)
     })
 
@@ -371,10 +363,10 @@ Deno.serve(async (req) => {
         .slice(0, 4)
     }
 
-    if (docFields.length > 0) {
+    if (docFields) {
       console.log("🔗 Matching requested fields with Azure extracted fields (TOP 4):")
       const dataToSave = docFields
-        .map((field) => {
+        .map((field: any) => {
           const top4Matches = findTop4AzureFields(field.name)
           
           // Helper to extract value from Azure field
@@ -490,7 +482,7 @@ Deno.serve(async (req) => {
           return {
             document_id: docId,
             field_id: field.id,
-            value: bestValue,
+            value: bestValue || 'Failed to Extract',
             confidence: bestConfidence,
             top3_values: top3Values,
             top3_confidences: top3Confidences,

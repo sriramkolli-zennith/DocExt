@@ -231,7 +231,7 @@ export default function DocumentDetailPage() {
         setFields(prevFields => 
           prevFields.map(f => 
             f.fieldId === fieldData.id 
-              ? { ...f, value: "Extraction failed" }
+              ? { ...f, value: "Failed to Extract" }
               : f
           )
         )
@@ -755,7 +755,7 @@ export default function DocumentDetailPage() {
                               {field.fieldType}
                             </span>
                           </div>
-                          <p className="text-base font-medium break-words text-gray-900 dark:text-white">{field.value || "Not extracted"}</p>
+                          <p className="text-base font-medium break-words text-gray-900 dark:text-white">{field.value || "Failed to Extract"}</p>
                           {field.confidence && (
                             <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                               Confidence: {(field.confidence * 100).toFixed(0)}%
@@ -810,7 +810,7 @@ export default function DocumentDetailPage() {
                             </Button>
                           </div>
                           {/* Bottom row: Thumbs up/down buttons */}
-                          {field.value && field.value !== "Not extracted" && field.value !== "Processing..." && (
+                          {field.value && field.value !== "Failed to Extract" && field.value !== "Processing..." && (
                             <div className="flex gap-2">
                               <button
                                 onClick={(e) => {
