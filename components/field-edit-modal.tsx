@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { X } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { X, RefreshCw } from "lucide-react"
 
 interface EditableField {
   fieldId: string
@@ -12,26 +13,40 @@ interface EditableField {
   confidence: number | null
 }
 
-interface FieldEditModalProps {
+export interface FieldEditModalProps {
   isOpen: boolean
   field: EditableField | null
   onClose: () => void
-  onFieldValueChange: (fieldId: string, newValue: string) => Promise<void> | void
+  onFieldUpdate: (fieldId: string, newFieldName: string, newFieldType: string) => Promise<void> | void
 }
+
+const FIELD_TYPES = [
+  { value: "text", label: "Text" },
+  { value: "number", label: "Number" },
+  { value: "date", label: "Date" },
+  { value: "email", label: "Email" },
+  { value: "phone", label: "Phone" },
+  { value: "currency", label: "Currency" },
+  { value: "boolean", label: "Boolean" },
+  { value: "address", label: "Address" },
+  { value: "url", label: "URL" },
+]
 
 export default function FieldEditModal({
   isOpen,
   field,
   onClose,
-  onFieldValueChange,
+  onFieldUpdate,
 }: FieldEditModalProps) {
-  const [editedValue, setEditedValue] = useState(field?.value || "")
+  const [editedFieldName, setEditedFieldName] = useState(field?.fieldName || "")
+  const [editedFieldType, setEditedFieldType] = useState(field?.fieldType || "text")
   const [isSaving, setIsSaving] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
     if (field) {
-      setEditedValue(field.value || "")
+      setEditedFieldName(field.fieldName || "")
+      setEditedFieldType(field.fieldType || "text")
       setErrorMessage(null)
     }
   }, [field])
@@ -40,10 +55,19 @@ export default function FieldEditModal({
     return null
   }
 
+  const hasChanges = 
+    editedFieldName !== field.fieldName || 
+    editedFieldType !== field.fieldType
+
   const handleSave = async (event: React.FormEvent) => {
     event.preventDefault()
-    if (!editedValue.trim()) {
-      setErrorMessage("Please enter a value before saving.")
+    if (!editedFieldName.trim()) {
+      setErrorMessage("Please enter a field name.")
+      return
+    }
+
+    if (!hasChanges) {
+      setErrorMessage("No changes detected.")
       return
     }
 
@@ -51,31 +75,31 @@ export default function FieldEditModal({
     setErrorMessage(null)
 
     try {
-      await onFieldValueChange(field.fieldId, editedValue.trim())
+      await onFieldUpdate(field.fieldId, editedFieldName.trim(), editedFieldType)
       onClose()
     } catch (error) {
-      console.error("Failed to save field:", error)
-      setErrorMessage("Failed to save field. Please try again.")
+      console.error("Failed to update field:", error)
+      setErrorMessage("Failed to update field. Please try again.")
     } finally {
       setIsSaving(false)
     }
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
       <form
         onSubmit={handleSave}
         className="w-full max-w-lg rounded-2xl bg-white dark:bg-slate-900 shadow-2xl border border-gray-200 dark:border-slate-700"
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-700">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-900">
           <div>
-            <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Editing field</p>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{field.fieldName}</h2>
+            <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Edit Field Configuration</p>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Update & Re-extract</h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-full text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:hover:bg-slate-800"
+            className="p-2 rounded-full text-gray-500 hover:text-gray-900 hover:bg-white/80 dark:hover:bg-slate-800"
             aria-label="Close dialog"
           >
             <X className="h-5 w-5" />
@@ -83,30 +107,63 @@ export default function FieldEditModal({
         </div>
 
         <div className="px-6 py-5 space-y-5">
-          <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
-            <span className="px-2 py-1 rounded-full bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-200 text-xs font-semibold">
-              {field.fieldType}
-            </span>
-            {field.confidence !== null && (
-              <span>Confidence: {(field.confidence * 100).toFixed(1)}%</span>
-            )}
+          <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <p className="text-sm text-blue-800 dark:text-blue-200 flex items-center gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Changing the field name or type will trigger a new extraction from Azure AI
+            </p>
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Field value
+              Field Name <span className="text-red-500">*</span>
             </label>
-            <textarea
-              value={editedValue}
-              onChange={(event) => setEditedValue(event.target.value)}
-              rows={5}
-              className="w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter the correct value"
+            <Input
+              value={editedFieldName}
+              onChange={(e) => setEditedFieldName(e.target.value)}
+              className="w-full"
+              placeholder="e.g., Invoice Number, Total Amount"
+              required
             />
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              The name of the field to extract from the document
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Field Type <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={editedFieldType}
+              onChange={(e) => setEditedFieldType(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {FIELD_TYPES.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              The data type helps Azure AI better understand what to extract
+            </p>
+          </div>
+
+          <div className="p-4 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
+            <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Current Value:</p>
+            <p className="text-sm text-gray-900 dark:text-white font-medium">{field.value || "(empty)"}</p>
+            {field.confidence !== null && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Confidence: {(field.confidence * 100).toFixed(1)}%
+              </p>
+            )}
           </div>
 
           {errorMessage && (
-            <p className="text-sm text-red-600 dark:text-red-400">{errorMessage}</p>
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <p className="text-sm text-red-600 dark:text-red-400">{errorMessage}</p>
+            </div>
           )}
         </div>
 
@@ -116,11 +173,26 @@ export default function FieldEditModal({
             variant="outline"
             onClick={onClose}
             className="text-gray-700 dark:text-gray-200"
+            disabled={isSaving}
           >
             Cancel
           </Button>
-          <Button type="submit" disabled={isSaving} className="gap-2">
-            {isSaving ? "Saving..." : "Save changes"}
+          <Button 
+            type="submit" 
+            disabled={isSaving || !hasChanges} 
+            className="gap-2"
+          >
+            {isSaving ? (
+              <>
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                Re-extracting...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4" />
+                Save & Re-extract
+              </>
+            )}
           </Button>
         </div>
       </form>

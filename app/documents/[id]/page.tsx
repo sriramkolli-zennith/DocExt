@@ -5,7 +5,7 @@ import { createClient } from "@/lib/client"
 import { useSessionManager } from "@/lib/useSessionManager"
 import { SessionWarningModal } from "@/components/session-warning-modal"
 import dynamic from "next/dynamic"
-import { getExtractedData, processDocument } from "@/lib/edge-functions"
+import { getExtractedData, processDocument, reExtractSingleField } from "@/lib/edge-functions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -14,7 +14,9 @@ import { useRouter, useParams } from "next/navigation"
 import { ArrowLeft, Plus, Eye, Trash2, Download, RotateCcw, ThumbsUp, ThumbsDown, Edit, X } from "lucide-react"
 import Navbar from "@/components/navbar"
 import FieldValidationModal from "@/components/field-validation-modal"
+import FieldEditModal from "@/components/field-edit-modal"
 import { updateFieldFeedback } from "@/lib/edge-functions"
+import { CustomAlert } from "@/components/custom-alert"
 
 // Force dynamic rendering
 export const dynamicParams = true
@@ -52,6 +54,7 @@ interface ExtractedField {
   userFeedback?: string | null
   isManuallySelected?: boolean
   selectedFromTop3Index?: number | null
+  feedbackAttemptCount?: number
 }
 
 interface Document {
@@ -82,11 +85,48 @@ export default function DocumentDetailPage() {
   const [editingField, setEditingField] = useState<ExtractedField | null>(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [editFieldType, setEditFieldType] = useState('')
+  
+  // Custom alert states
+  const [alertOpen, setAlertOpen] = useState(false)
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string
+    description?: string
+    type: "success" | "error" | "warning" | "info"
+    onConfirm?: () => void
+    confirmText?: string
+    cancelText?: string
+  }>({
+    title: "",
+    type: "info",
+  })
+  
   const router = useRouter()
   const supabase = createClient()
   
   // Initialize session manager for activity tracking and timeout
   const { showWarning, extendSession } = useSessionManager()
+
+  // Helper functions for custom alerts
+  const showAlert = (
+    title: string,
+    description?: string,
+    type: "success" | "error" | "warning" | "info" = "info"
+  ) => {
+    setAlertConfig({ title, description, type })
+    setAlertOpen(true)
+  }
+
+  const showConfirm = (
+    title: string,
+    description: string,
+    onConfirm: () => void,
+    type: "warning" | "error" = "warning",
+    confirmText: string = "Confirm",
+    cancelText: string = "Cancel"
+  ) => {
+    setAlertConfig({ title, description, type, onConfirm, confirmText, cancelText })
+    setAlertOpen(true)
+  }
 
   useEffect(() => {
     fetchData()
@@ -211,31 +251,40 @@ export default function DocumentDetailPage() {
   }
 
   const handleDeleteField = async (fieldId: string) => {
-    if (!window.confirm("Delete this field?")) return
+    const field = fields.find(f => f.fieldId === fieldId || f.id === fieldId)
+    showConfirm(
+      "Delete Field",
+      `Are you sure you want to delete the field "${field?.fieldName}"? This action cannot be undone.`,
+      async () => {
+        try {
+          // Delete extracted data first
+          const { error: dataError } = await supabase
+            .from("extracted_data")
+            .delete()
+            .eq("field_id", fieldId)
 
-    try {
-      // Delete extracted data first
-      const { error: dataError } = await supabase
-        .from("extracted_data")
-        .delete()
-        .eq("field_id", fieldId)
+          if (dataError) throw dataError
 
-      if (dataError) throw dataError
+          // Then delete the field
+          const { error: fieldError } = await supabase
+            .from("document_fields")
+            .delete()
+            .eq("id", fieldId)
 
-      // Then delete the field
-      const { error: fieldError } = await supabase
-        .from("document_fields")
-        .delete()
-        .eq("id", fieldId)
+          if (fieldError) throw fieldError
 
-      if (fieldError) throw fieldError
-
-      // Update UI - filter by id or fieldId
-      setFields(fields.filter((f) => f.id !== fieldId && f.fieldId !== fieldId))
-    } catch (error) {
-      console.error("Failed to delete field:", error)
-      alert("Failed to delete field. Please try again.")
-    }
+          // Update UI - filter by id or fieldId
+          setFields(fields.filter((f) => f.id !== fieldId && f.fieldId !== fieldId))
+          showAlert("Field Deleted", "The field has been successfully deleted.", "success")
+        } catch (error) {
+          console.error("Failed to delete field:", error)
+          showAlert("Delete Failed", "Failed to delete field. Please try again.", "error")
+        }
+      },
+      "error",
+      "Delete",
+      "Cancel"
+    )
   }
 
   const handleRerun = async () => {
@@ -285,7 +334,7 @@ export default function DocumentDetailPage() {
 
       if (processError) {
         console.error("Rerun extraction error:", processError)
-        alert("Failed to rerun extraction. Please try again.")
+        showAlert("Extraction Failed", "Failed to rerun extraction. Please try again.", "error")
       } else {
         console.log("Rerun extraction successful:", processData)
       }
@@ -298,7 +347,7 @@ export default function DocumentDetailPage() {
     } catch (error) {
       console.error("Failed to rerun extraction:", error)
       setIsProcessing(false)
-      alert("Failed to rerun extraction. Please try again.")
+      showAlert("Extraction Failed", "Failed to rerun extraction. Please try again.", "error")
     }
   }
 
@@ -338,33 +387,67 @@ export default function DocumentDetailPage() {
     }
   }
 
-  const handleEditFieldType = async () => {
-    if (!editingField) return
-    
+  const handleFieldUpdate = async (fieldId: string, newFieldName: string, newFieldType: string) => {
     try {
-      const { error } = await supabase
-        .from("document_fields")
-        .update({ type: editFieldType })
-        .eq("id", editingField.fieldId)
+      setFeedbackLoading(fieldId)
       
-      if (error) throw error
+      // Call re-extract edge function
+      const { data, error } = await reExtractSingleField(
+        documentId,
+        fieldId,
+        newFieldName,
+        newFieldType
+      )
       
-      // Update local state
-      setFields(fields.map(f => 
-        f.fieldId === editingField.fieldId 
-          ? { ...f, fieldType: editFieldType }
-          : f
-      ))
+      if (error) {
+        // Show user-friendly error messages
+        if (error.includes('Azure credentials')) {
+          showAlert(
+            "Configuration Error",
+            "Azure Document Intelligence is not configured. Please contact your administrator to set up Azure credentials in Supabase.",
+            "error"
+          )
+        } else if (error.includes('not found')) {
+          showAlert(
+            "Not Found",
+            "Document or field not found. Please refresh the page and try again.",
+            "error"
+          )
+        } else {
+          showAlert(
+            "Re-extraction Failed",
+            `Failed to re-extract field: ${error}`,
+            "error"
+          )
+        }
+        throw new Error(error)
+      }
+      
+      // Refresh data to get updated extraction
+      await fetchData()
       
       setIsEditModalOpen(false)
       setEditingField(null)
     } catch (error) {
-      console.error('Failed to update field type:', error)
-      alert('Failed to update field type')
+      console.error('Failed to update and re-extract field:', error)
+      // Error already shown to user via alert above
+    } finally {
+      setFeedbackLoading(null)
     }
   }
 
   const handleThumbsUp = async (field: ExtractedField) => {
+    // Check if user has reached the 2-attempt limit
+    const currentAttempts = field.feedbackAttemptCount || 0
+    if (currentAttempts >= 2) {
+      showAlert(
+        "Feedback Limit Reached",
+        "You have already used your 2 feedback attempts for this field.",
+        "warning"
+      )
+      return
+    }
+
     setFeedbackLoading(field.id)
     try {
       const { data, error } = await updateFieldFeedback({
@@ -374,15 +457,19 @@ export default function DocumentDetailPage() {
       
       if (error) throw new Error(error)
       
-      // Update local state
+      // Update local state - increment attempt count
       setFields(fields.map(f => 
         f.id === field.id 
-          ? { ...f, userFeedback: 'thumbs_up' }
+          ? { 
+              ...f, 
+              userFeedback: 'thumbs_up',
+              feedbackAttemptCount: currentAttempts + 1
+            }
           : f
       ))
     } catch (error) {
       console.error('Failed to update feedback:', error)
-      alert('Failed to update feedback')
+      showAlert("Update Failed", "Failed to update feedback. Please try again.", "error")
     } finally {
       setFeedbackLoading(null)
     }
@@ -419,7 +506,7 @@ export default function DocumentDetailPage() {
     }
     
     if (alternatives.length === 0) {
-      alert('No alternative values available for this field')
+      showAlert('No Alternatives', 'No alternative values available for this field', 'info')
       return
     }
     
@@ -430,6 +517,19 @@ export default function DocumentDetailPage() {
 
   const handleSelectAlternative = async (index: number) => {
     if (!selectedField) return
+    
+    // Check if user has reached the 2-attempt limit
+    const currentAttempts = selectedField.feedbackAttemptCount || 0
+    if (currentAttempts >= 2) {
+      showAlert(
+        'Feedback Limit Reached',
+        'You have already used your 2 feedback attempts for this field.',
+        'warning'
+      )
+      setIsModalOpen(false)
+      setSelectedField(null)
+      return
+    }
     
     setFeedbackLoading(selectedField.id)
     try {
@@ -463,7 +563,8 @@ export default function DocumentDetailPage() {
               labelBoundingBox: newLabelBoundingBox || f.labelBoundingBox,
               userFeedback: 'thumbs_down',
               isManuallySelected: true,
-              selectedFromTop3Index: index
+              selectedFromTop3Index: index,
+              feedbackAttemptCount: currentAttempts + 1
             }
           : f
       ))
@@ -472,7 +573,7 @@ export default function DocumentDetailPage() {
       setSelectedField(null)
     } catch (error) {
       console.error('Failed to select alternative:', error)
-      alert('Failed to select alternative value')
+      showAlert("Selection Failed", "Failed to select alternative value. Please try again.", "error")
     } finally {
       setFeedbackLoading(null)
     }
@@ -688,11 +789,10 @@ export default function DocumentDetailPage() {
                               onClick={(e) => {
                                 e.stopPropagation()
                                 setEditingField(field)
-                                setEditFieldType(field.fieldType)
                                 setIsEditModalOpen(true)
                               }}
                               className="hidden sm:flex gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-slate-700"
-                              title="Edit field type"
+                              title="Edit field name and type"
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -717,15 +817,15 @@ export default function DocumentDetailPage() {
                                   e.stopPropagation()
                                   handleThumbsUp(field)
                                 }}
-                                disabled={feedbackLoading === field.id || field.userFeedback !== null}
+                                disabled={feedbackLoading === field.id || (field.feedbackAttemptCount || 0) >= 2}
                                 className={`p-1.5 rounded-md transition-all flex-1 ${
                                   field.userFeedback === 'thumbs_up'
-                                    ? 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400 cursor-not-allowed'
-                                    : field.userFeedback !== null
+                                    ? 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400'
+                                    : (field.feedbackAttemptCount || 0) >= 2
                                     ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
                                     : 'text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:text-green-400 dark:hover:bg-green-900/20'
                                 }`}
-                                title={field.userFeedback !== null ? 'Feedback already given' : 'Approve value'}
+                                title={(field.feedbackAttemptCount || 0) >= 2 ? 'Maximum attempts reached (2/2)' : field.userFeedback === 'thumbs_up' ? 'Approved' : `Approve value (${field.feedbackAttemptCount || 0}/2 attempts)`}
                               >
                                 <ThumbsUp className="h-4 w-4 mx-auto" />
                               </button>
@@ -734,15 +834,15 @@ export default function DocumentDetailPage() {
                                   e.stopPropagation()
                                   handleThumbsDown(field)
                                 }}
-                                disabled={feedbackLoading === field.id || field.userFeedback !== null}
+                                disabled={feedbackLoading === field.id || (field.feedbackAttemptCount || 0) >= 2}
                                 className={`p-1.5 rounded-md transition-all flex-1 ${
                                   field.userFeedback === 'thumbs_down'
-                                    ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 cursor-not-allowed'
-                                    : field.userFeedback !== null
+                                    ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400'
+                                    : (field.feedbackAttemptCount || 0) >= 2
                                     ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
                                     : 'text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/20'
                                 }`}
-                                title={field.userFeedback !== null ? 'Feedback already given' : 'See alternatives'}
+                                title={(field.feedbackAttemptCount || 0) >= 2 ? 'Maximum attempts reached (2/2)' : field.userFeedback === 'thumbs_down' ? 'Alternative selected' : `See alternatives (${field.feedbackAttemptCount || 0}/2 attempts)`}
                               >
                                 <ThumbsDown className="h-4 w-4 mx-auto" />
                               </button>
@@ -787,76 +887,23 @@ export default function DocumentDetailPage() {
           </div>
         </div>
 
-        {/* Edit Field Type Modal */}
+        {/* Field Edit Modal - Edit field name and type, triggers re-extraction */}
         {editingField && (
-          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-slate-900 rounded-lg max-w-md w-full shadow-2xl">
-              <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-slate-700">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Edit Field Type</h2>
-                <button
-                  onClick={() => {
-                    setIsEditModalOpen(false)
-                    setEditingField(null)
-                  }}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                >
-                  <X className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                </button>
-              </div>
-              <div className="p-6">
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Field Name
-                    </label>
-                    <input
-                      type="text"
-                      value={editingField.fieldName}
-                      disabled
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Field Type
-                    </label>
-                    <select
-                      value={editFieldType}
-                      onChange={(e) => setEditFieldType(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
-                    >
-                      <option value="text">Text</option>
-                      <option value="number">Number</option>
-                      <option value="date">Date</option>
-                      <option value="email">Email</option>
-                      <option value="phone">Phone</option>
-                      <option value="currency">Currency</option>
-                      <option value="address">Address</option>
-                      <option value="url">URL</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-              <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-slate-700">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsEditModalOpen(false)
-                    setEditingField(null)
-                  }}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleEditFieldType}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  Save
-                </Button>
-              </div>
-            </div>
-          </div>
+          <FieldEditModal
+            isOpen={isEditModalOpen}
+            field={{
+              fieldId: editingField.fieldId,
+              fieldName: editingField.fieldName,
+              fieldType: editingField.fieldType,
+              value: editingField.value,
+              confidence: editingField.confidence
+            }}
+            onClose={() => {
+              setIsEditModalOpen(false)
+              setEditingField(null)
+            }}
+            onFieldUpdate={handleFieldUpdate}
+          />
         )}
 
         {/* Validation Modal - Show Top 3 Alternatives */}
@@ -914,6 +961,18 @@ export default function DocumentDetailPage() {
           autoCloseToken={pdfAutoCloseToken}
         />
       )}
+
+      {/* Custom Alert Dialog */}
+      <CustomAlert
+        open={alertOpen}
+        onOpenChange={setAlertOpen}
+        title={alertConfig.title}
+        description={alertConfig.description}
+        type={alertConfig.type}
+        onConfirm={alertConfig.onConfirm}
+        confirmText={alertConfig.confirmText}
+        cancelText={alertConfig.cancelText}
+      />
     </div>
   )
 }

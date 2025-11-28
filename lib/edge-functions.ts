@@ -126,6 +126,23 @@ export async function updateFieldFeedback(params: {
 }
 
 /**
+ * Re-extract a single field with new name and type
+ */
+export async function reExtractSingleField(
+  documentId: string,
+  fieldId: string,
+  fieldName: string,
+  fieldType: string
+) {
+  return callEdgeFunction("re-extract-single-field", {
+    documentId,
+    fieldId,
+    fieldName,
+    fieldType,
+  })
+}
+
+/**
  * Check if a document with the same contents already exists
  */
 export async function checkDuplicateDocument(params: {
@@ -209,4 +226,3 @@ export async function checkDuplicateDocument(params: {
     return { exists: false }
   }
 }
-

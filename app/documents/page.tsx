@@ -14,6 +14,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import Navbar from "@/components/navbar"
 import DocumentCard from "@/components/document-card"
+import { CustomAlert } from "@/components/custom-alert"
 
 interface Document {
   id: string
@@ -35,6 +36,42 @@ export default function DocumentsPage() {
   
   // Initialize session manager for activity tracking and timeout
   const { showWarning, extendSession } = useSessionManager()
+
+  // Custom alert states
+  const [alertOpen, setAlertOpen] = useState(false)
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string
+    description?: string
+    type: "success" | "error" | "warning" | "info"
+    onConfirm?: () => void
+    confirmText?: string
+    cancelText?: string
+  }>({
+    title: "",
+    type: "info",
+  })
+
+  // Helper functions for custom alerts
+  const showAlert = (
+    title: string,
+    description?: string,
+    type: "success" | "error" | "warning" | "info" = "info"
+  ) => {
+    setAlertConfig({ title, description, type })
+    setAlertOpen(true)
+  }
+
+  const showConfirm = (
+    title: string,
+    description: string,
+    onConfirm: () => void,
+    type: "warning" | "error" = "warning",
+    confirmText: string = "Confirm",
+    cancelText: string = "Cancel"
+  ) => {
+    setAlertConfig({ title, description, type, onConfirm, confirmText, cancelText })
+    setAlertOpen(true)
+  }
 
   useEffect(() => {
     fetchDocuments()
@@ -89,15 +126,24 @@ export default function DocumentsPage() {
   }
 
   const handleDelete = async (documentId: string) => {
-    if (!window.confirm("Are you sure you want to delete this document?")) return
-
-    try {
-      const { error } = await supabase.from("documents").delete().eq("id", documentId)
-      if (error) throw error
-      setDocuments(documents.filter((doc) => doc.id !== documentId))
-    } catch (error) {
-      console.error("Failed to delete document:", error)
-    }
+    showConfirm(
+      "Delete Document",
+      "Are you sure you want to delete this document? This action cannot be undone.",
+      async () => {
+        try {
+          const { error } = await supabase.from("documents").delete().eq("id", documentId)
+          if (error) throw error
+          setDocuments(documents.filter((doc) => doc.id !== documentId))
+          showAlert("Document Deleted", "The document has been successfully deleted.", "success")
+        } catch (error) {
+          console.error("Failed to delete document:", error)
+          showAlert("Delete Failed", "Failed to delete document. Please try again.", "error")
+        }
+      },
+      "error",
+      "Delete",
+      "Cancel"
+    )
   }
 
   if (isLoading) {
@@ -193,6 +239,18 @@ export default function DocumentsPage() {
           </div>
         )}
       </div>
+
+      {/* Custom Alert Dialog */}
+      <CustomAlert
+        open={alertOpen}
+        onOpenChange={setAlertOpen}
+        title={alertConfig.title}
+        description={alertConfig.description}
+        type={alertConfig.type}
+        onConfirm={alertConfig.onConfirm}
+        confirmText={alertConfig.confirmText}
+        cancelText={alertConfig.cancelText}
+      />
     </div>
   )
 }

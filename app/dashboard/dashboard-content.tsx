@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Plus, FileText, TrendingUp, CheckCircle2, Clock } from "lucide-react"
 import Link from "next/link"
 import DocumentCard from "@/components/document-card"
+import { CustomAlert } from "@/components/custom-alert"
 
 interface Document {
   id: string
@@ -40,27 +41,72 @@ export default function DashboardContent({ initialDocuments, initialStats }: Das
   // Initialize session manager for activity tracking and timeout
   const { showWarning, extendSession } = useSessionManager()
 
+  // Custom alert states
+  const [alertOpen, setAlertOpen] = useState(false)
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string
+    description?: string
+    type: "success" | "error" | "warning" | "info"
+    onConfirm?: () => void
+    confirmText?: string
+    cancelText?: string
+  }>({
+    title: "",
+    type: "info",
+  })
+
+  // Helper functions for custom alerts
+  const showAlert = (
+    title: string,
+    description?: string,
+    type: "success" | "error" | "warning" | "info" = "info"
+  ) => {
+    setAlertConfig({ title, description, type })
+    setAlertOpen(true)
+  }
+
+  const showConfirm = (
+    title: string,
+    description: string,
+    onConfirm: () => void,
+    type: "warning" | "error" = "warning",
+    confirmText: string = "Confirm",
+    cancelText: string = "Cancel"
+  ) => {
+    setAlertConfig({ title, description, type, onConfirm, confirmText, cancelText })
+    setAlertOpen(true)
+  }
+
   const handleDelete = async (documentId: string) => {
-    if (!window.confirm("Are you sure you want to delete this document?")) return
+    showConfirm(
+      "Delete Document",
+      "Are you sure you want to delete this document? This action cannot be undone.",
+      async () => {
+        try {
+          const { error } = await supabase.from("documents").delete().eq("id", documentId)
+          if (error) throw error
+          
+          const updatedDocuments = documents.filter((doc) => doc.id !== documentId)
+          setDocuments(updatedDocuments)
 
-    try {
-      const { error } = await supabase.from("documents").delete().eq("id", documentId)
-      if (error) throw error
-      
-      const updatedDocuments = documents.filter((doc) => doc.id !== documentId)
-      setDocuments(updatedDocuments)
+          // Recalculate stats
+          const completed = updatedDocuments.filter(d => d.status === "completed").length
+          const processing = updatedDocuments.filter(d => d.status === "processing").length
+          const failed = updatedDocuments.filter(d => d.status === "failed").length
+          const total = updatedDocuments.length
+          const successRate = total > 0 ? (completed / total) * 100 : 0
 
-      // Recalculate stats
-      const completed = updatedDocuments.filter(d => d.status === "completed").length
-      const processing = updatedDocuments.filter(d => d.status === "processing").length
-      const failed = updatedDocuments.filter(d => d.status === "failed").length
-      const total = updatedDocuments.length
-      const successRate = total > 0 ? (completed / total) * 100 : 0
-
-      setStats({ total, completed, processing, failed, successRate })
-    } catch (error) {
-      console.error("Failed to delete document:", error)
-    }
+          setStats({ total, completed, processing, failed, successRate })
+          showAlert("Document Deleted", "The document has been successfully deleted.", "success")
+        } catch (error) {
+          console.error("Failed to delete document:", error)
+          showAlert("Delete Failed", "Failed to delete document. Please try again.", "error")
+        }
+      },
+      "error",
+      "Delete",
+      "Cancel"
+    )
   }
 
   const recentDocs = documents.slice(0, 3)
@@ -200,6 +246,18 @@ export default function DashboardContent({ initialDocuments, initialStats }: Das
           )}
         </div>
       </div>
+
+      {/* Custom Alert Dialog */}
+      <CustomAlert
+        open={alertOpen}
+        onOpenChange={setAlertOpen}
+        title={alertConfig.title}
+        description={alertConfig.description}
+        type={alertConfig.type}
+        onConfirm={alertConfig.onConfirm}
+        confirmText={alertConfig.confirmText}
+        cancelText={alertConfig.cancelText}
+      />
     </>
   )
 }
