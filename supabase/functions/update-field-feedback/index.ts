@@ -4,7 +4,7 @@ import { corsHeaders } from "../_shared/cors.ts"
 interface FeedbackRequest {
   extractedDataId: string
   action: 'thumbs_up' | 'thumbs_down' | 'select_from_top3'
-  selectedIndex?: number  // 0, 1, or 2 for selecting from top 3
+  selectedIndex?: number  // 0-2 for selecting from up to three alternatives
 }
 
 Deno.serve(async (req) => {
@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
       if (![0, 1, 2].includes(selectedIndex)) {
         console.error("❌ Invalid selectedIndex:", selectedIndex)
         return new Response(
-          JSON.stringify({ error: "selectedIndex must be 0, 1, or 2" }),
+          JSON.stringify({ error: "selectedIndex must be between 0 and 2" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         )
       }
@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
 
     console.log("📊 Current data:")
     console.log("  - Current value:", currentData.value)
-    console.log("  - Top 3 values:", currentData.top3_values)
+    console.log("  - Alternative values:", currentData.top3_values)
 
     let updateData: any = {
       feedback_timestamp: new Date().toISOString()

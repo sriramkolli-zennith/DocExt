@@ -85,6 +85,7 @@ export default function DocumentDetailPage() {
   const [editingField, setEditingField] = useState<ExtractedField | null>(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [editFieldType, setEditFieldType] = useState('')
+  const [inlineFeedback, setInlineFeedback] = useState<{ type: "success" | "info" | "warning"; message: string } | null>(null)
   
   // Custom alert states
   const [alertOpen, setAlertOpen] = useState(false)
@@ -105,6 +106,12 @@ export default function DocumentDetailPage() {
   
   // Initialize session manager for activity tracking and timeout
   const { showWarning, extendSession } = useSessionManager()
+
+  useEffect(() => {
+    if (!inlineFeedback) return
+    const timer = setTimeout(() => setInlineFeedback(null), 4000)
+    return () => clearTimeout(timer)
+  }, [inlineFeedback])
 
   // Helper functions for custom alerts
   const showAlert = (
@@ -467,6 +474,11 @@ export default function DocumentDetailPage() {
             }
           : f
       ))
+
+      setInlineFeedback({
+        type: 'success',
+        message: 'Thanks for your feedback! We noted the approval.',
+      })
     } catch (error) {
       console.error('Failed to update feedback:', error)
       showAlert("Update Failed", "Failed to update feedback. Please try again.", "error")
@@ -476,35 +488,21 @@ export default function DocumentDetailPage() {
   }
 
   const handleThumbsDown = async (field: ExtractedField) => {
-    // Build alternatives array: if user already selected from top3, show all 4 options
+    // Build alternatives array: supply up to three values at first, all afterwards
     let alternatives: Array<{ value: string; confidence: number; pageNumber: number; index: number }> = []
-    
-    if (field.isManuallySelected && field.selectedFromTop3Index !== null && field.top3Values) {
-      // User previously selected an alternative, show all 4 options
-      // Find the original first value from top3Values based on selectedFromTop3Index
-      const allValues = field.top3Values || []
-      
-      if (allValues.length > 0) {
-        // Add all available values with their metadata
-        allValues.forEach((val, idx) => {
-          alternatives.push({
-            value: val,
-            confidence: field.top3Confidences?.[idx] || 0,
-            pageNumber: field.top3PageNumbers?.[idx] || 1,
-            index: idx
-          })
-        })
-      }
-    } else if (field.top3Values && field.top3Values.length > 0) {
-      // First time clicking thumbs down, show only the 3 alternatives
-      alternatives = field.top3Values.map((val, idx) => ({
-        value: val,
-        confidence: field.top3Confidences?.[idx] || 0,
-        pageNumber: field.top3PageNumbers?.[idx] || 1,
-        index: idx
-      }))
+    const allAlternatives = (field.top3Values || []).map((val, idx) => ({
+      value: val,
+      confidence: field.top3Confidences?.[idx] || 0,
+      pageNumber: field.top3PageNumbers?.[idx] || 1,
+      index: idx
+    }))
+
+    if (field.isManuallySelected && field.selectedFromTop3Index !== null) {
+      alternatives = allAlternatives
+    } else {
+      alternatives = allAlternatives.slice(0, 3)
     }
-    
+
     if (alternatives.length === 0) {
       showAlert('No Alternatives', 'No alternative values available for this field', 'info')
       return
@@ -569,6 +567,11 @@ export default function DocumentDetailPage() {
           : f
       ))
       
+      setInlineFeedback({
+        type: 'success',
+        message: 'Thanks! The new value has been applied.',
+      })
+
       setIsModalOpen(false)
       setSelectedField(null)
     } catch (error) {
@@ -631,6 +634,19 @@ export default function DocumentDetailPage() {
 
       <div className={`transition-all duration-300 ease-out ${pdfSidebarOpen ? "lg:pr-[50%]" : "pr-0"}`}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
+          {inlineFeedback && (
+            <div
+              className={`mb-6 rounded-lg border px-4 py-3 text-sm font-medium transition-colors ${
+                inlineFeedback.type === 'success'
+                  ? 'bg-green-50 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-200 dark:border-green-800'
+                  : inlineFeedback.type === 'warning'
+                  ? 'bg-yellow-50 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-200 dark:border-yellow-800'
+                  : 'bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-100 dark:border-blue-800'
+              }`}
+            >
+              {inlineFeedback.message}
+            </div>
+          )}
           {/* Header */}
           <Link href="/documents" className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline mb-6">
           <ArrowLeft className="h-4 w-4" />
@@ -906,37 +922,35 @@ export default function DocumentDetailPage() {
           />
         )}
 
-        {/* Validation Modal - Show Top 3 Alternatives */}
+        {/* Validation Modal - Show Top Alternatives */}
         {selectedField && (
-          <FieldValidationModal
-            isOpen={isModalOpen}
-            fieldName={selectedField.fieldName}
-            currentValue={selectedField.value}
-            alternatives={
-              selectedField.isManuallySelected && selectedField.selectedFromTop3Index !== null
-                ? // Show all values if user already selected an alternative
-                  (selectedField.top3Values?.map((value, idx) => ({
-                    value,
-                    confidence: selectedField.top3Confidences?.[idx] || 0,
-                    pageNumber: selectedField.top3PageNumbers?.[idx] || 1,
-                    isOriginal: false, // All are from Azure
-                    index: idx
-                  })) || [])
-                : // First time, show only the 3 alternatives
-                  (selectedField.top3Values?.map((value, idx) => ({
-                    value,
-                    confidence: selectedField.top3Confidences?.[idx] || 0,
-                    pageNumber: selectedField.top3PageNumbers?.[idx] || 1,
-                    isOriginal: false,
-                    index: idx
-                  })) || [])
-            }
-            onClose={() => {
-              setIsModalOpen(false)
-              setSelectedField(null)
-            }}
-            onSelectAlternative={handleSelectAlternative}
-          />
+          (() => {
+            const rawAlternatives = (selectedField.top3Values?.map((value, idx) => ({
+              value,
+              confidence: selectedField.top3Confidences?.[idx] || 0,
+              pageNumber: selectedField.top3PageNumbers?.[idx] || 1,
+              isOriginal: false,
+              index: idx
+            })) || [])
+
+            const alternatives = (selectedField.isManuallySelected && selectedField.selectedFromTop3Index !== null)
+              ? rawAlternatives
+              : rawAlternatives.slice(0, 3)
+
+            return (
+              <FieldValidationModal
+                isOpen={isModalOpen}
+                fieldName={selectedField.fieldName}
+                currentValue={selectedField.value}
+                alternatives={alternatives}
+                onClose={() => {
+                  setIsModalOpen(false)
+                  setSelectedField(null)
+                }}
+                onSelectAlternative={handleSelectAlternative}
+              />
+            )
+          })()
         )}
         </div>
       </div>

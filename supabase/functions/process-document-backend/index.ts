@@ -336,18 +336,20 @@ Deno.serve(async (req) => {
       return 0
     }
 
-    // Helper function to find TOP 4 matching Azure fields with intelligent matching (1st is primary, next 3 are alternatives)
-    const findTop4AzureFields = (requestedName: string): Array<{ fieldName: string; data: any; matchScore: number; matchType: string }> => {
-      // Score all Azure fields
+    // Helper function to find top matching Azure fields with intelligent matching
+    const findTopMatches = (
+      requestedName: string,
+      limit: number = 4
+    ): Array<{ fieldName: string; data: any; matchScore: number; matchType: string }> => {
       const scoredFields = Object.entries(extractedData).map(([fieldName, fieldData]) => {
         const matchScore = calculateMatchScore(requestedName, fieldName)
         let matchType = 'none'
-        
+
         if (matchScore >= 95) matchType = 'exact'
         else if (matchScore >= 80) matchType = 'contains'
         else if (matchScore >= 70) matchType = 'fuzzy'
         else if (matchScore >= 50) matchType = 'partial'
-        
+
         return {
           fieldName,
           data: fieldData,
@@ -355,19 +357,18 @@ Deno.serve(async (req) => {
           matchType
         }
       })
-      
-      // Sort by match score (descending) and take top 4
+
       return scoredFields
-        .filter(f => f.matchScore > 0)
+        .filter((field) => field.matchScore > 0)
         .sort((a, b) => b.matchScore - a.matchScore)
-        .slice(0, 4)
+        .slice(0, limit)
     }
 
     if (docFields) {
-      console.log("🔗 Matching requested fields with Azure extracted fields (TOP 4):")
+      console.log("🔗 Matching requested fields with Azure extracted fields (BEST + 3 alternatives):")
       const dataToSave = docFields
         .map((field: any) => {
-          const top4Matches = findTop4AzureFields(field.name)
+          const topMatches = findTopMatches(field.name, 5)
           
           // Helper to extract value from Azure field
           const extractValue = (azureField: any): string | null => {
@@ -421,13 +422,13 @@ Deno.serve(async (req) => {
             return { pageNumber, boundingBox, labelPageNumber, labelBoundingBox }
           }
           
-          // Process top 4 matches: first is primary, next 3 are alternatives
-          const top3Values: string[] = []
-          const top3Confidences: number[] = []
-          const top3PageNumbers: (number | null)[] = []
-          const top3BoundingBoxes: any[] = []
-          const top3LabelPageNumbers: (number | null)[] = []
-          const top3LabelBoundingBoxes: any[] = []
+          // Process top matches: first is primary, next up to 3 are alternatives
+          const alternativeValues: string[] = []
+          const alternativeConfidences: number[] = []
+          const alternativePageNumbers: (number | null)[] = []
+          const alternativeBoundingBoxes: any[] = []
+          const alternativeLabelPageNumbers: (number | null)[] = []
+          const alternativeLabelBoundingBoxes: any[] = []
           
           // Best match (index 0) will be the primary value
           let bestValue = ''
@@ -437,9 +438,9 @@ Deno.serve(async (req) => {
           let bestLabelPageNumber = null
           let bestLabelBoundingBox = null
           
-          console.log(`  "${field.name}" → Found ${top4Matches.length} match(es):`)
+          console.log(`  "${field.name}" → Found ${topMatches.length} match(es):`)
           
-          top4Matches.forEach((match, index) => {
+          topMatches.forEach((match, index) => {
             const value = extractValue(match.data)
             const confidence = match.data?.confidence || null
             const boundingData = extractBoundingData(match.data)
@@ -454,13 +455,15 @@ Deno.serve(async (req) => {
                 bestLabelPageNumber = boundingData.labelPageNumber
                 bestLabelBoundingBox = boundingData.labelBoundingBox
               } else {
-                // Indices 1-3 are the alternatives shown when user clicks thumbs down
-                top3Values.push(value)
-                top3Confidences.push(confidence || 0)
-                top3PageNumbers.push(boundingData.pageNumber)
-                top3BoundingBoxes.push(boundingData.boundingBox)
-                top3LabelPageNumbers.push(boundingData.labelPageNumber)
-                top3LabelBoundingBoxes.push(boundingData.labelBoundingBox)
+                // Indices beyond 0 are the alternatives shown when user clicks thumbs down (store up to 3)
+                if (alternativeValues.length < 3) {
+                  alternativeValues.push(value)
+                  alternativeConfidences.push(confidence || 0)
+                  alternativePageNumbers.push(boundingData.pageNumber)
+                  alternativeBoundingBoxes.push(boundingData.boundingBox)
+                  alternativeLabelPageNumbers.push(boundingData.labelPageNumber)
+                  alternativeLabelBoundingBoxes.push(boundingData.labelBoundingBox)
+                }
               }
               
               console.log(`    ${index + 1}. "${match.fieldName}" = "${value}" ✅ (${match.matchType}, score: ${match.matchScore}, confidence: ${confidence ? (confidence * 100).toFixed(1) + '%' : 'N/A'})`)
@@ -473,9 +476,9 @@ Deno.serve(async (req) => {
             }
           })
           
-          if (top4Matches.length === 0) {
+          if (topMatches.length === 0) {
             console.log(`    ❌ No matches found`)
-          } else if (top4Matches.length === 1) {
+          } else if (topMatches.length === 1) {
             console.log(`    ⚠️  Only 1 match found - no alternatives available`)
           }
           
@@ -484,17 +487,17 @@ Deno.serve(async (req) => {
             field_id: field.id,
             value: bestValue || 'Failed to Extract',
             confidence: bestConfidence,
-            top3_values: top3Values,
-            top3_confidences: top3Confidences,
-            top3_page_numbers: top3PageNumbers,
-            top3_bounding_boxes: top3BoundingBoxes,
-            top3_label_page_numbers: top3LabelPageNumbers,
-            top3_label_bounding_boxes: top3LabelBoundingBoxes,
+            top3_values: alternativeValues,
+            top3_confidences: alternativeConfidences,
+            top3_page_numbers: alternativePageNumbers,
+            top3_bounding_boxes: alternativeBoundingBoxes,
+            top3_label_page_numbers: alternativeLabelPageNumbers,
+            top3_label_bounding_boxes: alternativeLabelBoundingBoxes,
             pageNumber: bestPageNumber,
             boundingBox: bestBoundingBox,
             labelPageNumber: bestLabelPageNumber,
             labelBoundingBox: bestLabelBoundingBox,
-            found: top4Matches.length > 0 && bestValue !== ''
+            found: topMatches.length > 0 && bestValue !== ''
           }
         })
 
