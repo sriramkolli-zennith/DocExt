@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 
 export function DocumentCardSkeleton() {
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden rounded-2xl border-slate-200/60 dark:border-slate-800/80 bg-white dark:bg-slate-900/90 shadow-sm">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 space-y-2">
@@ -20,14 +20,16 @@ export function DocumentCardSkeleton() {
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Skeleton className="h-3 w-16" />
             <Skeleton className="h-4 w-20" />
           </div>
-          <div className="flex gap-2">
-            <Skeleton className="h-9 flex-1" />
-            <Skeleton className="h-9 w-9" />
-          </div>
+        </div>
+      </CardContent>
+      <CardContent className="pt-0">
+        <div className="flex gap-2">
+          <Skeleton className="h-9 flex-1" />
+          <Skeleton className="h-9 w-9" />
         </div>
       </CardContent>
     </Card>

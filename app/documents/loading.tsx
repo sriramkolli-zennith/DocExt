@@ -1,6 +1,5 @@
-import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import DocumentCardSkeleton from "@/components/document-card-skeleton"
+import { DocumentCardSkeleton } from "@/components/skeletons"
 import NavbarSkeleton from "@/components/navbar-skeleton"
 
 export default function DocumentsLoading() {

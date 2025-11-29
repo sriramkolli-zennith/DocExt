@@ -23,7 +23,7 @@ export function SessionWarningModal({ open, onExtend }: SessionWarningModalProps
         <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
           Session Expiring Soon
         </h2>
-        <p className="text-foreground mb-6">
+        <p className="text-slate-600 dark:text-slate-300 mb-6">
           Your session will expire in 5 minutes due to inactivity. Would you like to continue your session?
         </p>
         <div className="flex gap-3 justify-end">

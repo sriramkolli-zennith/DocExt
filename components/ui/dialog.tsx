@@ -48,7 +48,7 @@ const Dialog = ({ open, onOpenChange, children }: DialogProps) => {
 const DialogContent = ({ children, className = "" }: DialogContentProps) => {
   return (
     <div
-      className={`bg-white rounded-lg shadow-2xl p-6 max-w-md w-full mx-4 animate-in fade-in-0 zoom-in-95 ${className}`}
+      className={`bg-white dark:bg-slate-900 rounded-lg shadow-2xl p-6 max-w-md w-full mx-4 animate-in fade-in-0 zoom-in-95 ${className}`}
       onClick={(e) => e.stopPropagation()}
     >
       {children}
@@ -74,7 +74,7 @@ const DialogFooter = ({ children, className = "" }: DialogFooterProps) => {
 
 const DialogTitle = ({ children, className = "" }: DialogTitleProps) => {
   return (
-    <h2 className={`text-lg font-semibold leading-none tracking-tight ${className}`}>
+    <h2 className={`text-lg font-semibold leading-none tracking-tight text-slate-900 dark:text-slate-100 ${className}`}>
       {children}
     </h2>
   )

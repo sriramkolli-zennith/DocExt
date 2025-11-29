@@ -239,7 +239,7 @@ export function PDFViewerSidebar({
   const startAutoCloseTimer = useCallback(() => {
     if (!autoCloseEnabled) return
     clearTimers()
-    setCountdown(7)
+    setCountdown(5)
 
     countdownIntervalRef.current = setInterval(() => {
       setCountdown((prev) => {
@@ -255,7 +255,7 @@ export function PDFViewerSidebar({
     autoCloseTimerRef.current = setTimeout(() => {
       clearTimers()
       onClose()
-    }, 7000)
+    }, 5000)
   }, [autoCloseEnabled, clearTimers, onClose])
 
   const drawAllCurrentAnnotations = useCallback(() => {
