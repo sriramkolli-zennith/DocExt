@@ -6,12 +6,12 @@ import NavbarSkeleton from "@/components/navbar-skeleton"
 
 export default function DocumentDetailLoading() {
   return (
-    <div className="min-h-screen bg-linear-to-b from-background to-muted">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <NavbarSkeleton />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         {/* Back Button */}
-        <Link href="/documents" className="flex items-center gap-2 text-primary hover:underline mb-6">
+        <Link href="/documents" className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors mb-6 text-sm font-medium">
           <ArrowLeft className="h-4 w-4" />
           Back to Documents
         </Link>

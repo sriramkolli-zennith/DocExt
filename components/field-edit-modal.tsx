@@ -89,17 +89,17 @@ export default function FieldEditModal({
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
       <form
         onSubmit={handleSave}
-        className="w-full max-w-lg rounded-2xl bg-white dark:bg-slate-900 shadow-2xl border border-gray-200 dark:border-slate-700"
+        className="w-full max-w-lg rounded-2xl bg-white dark:bg-slate-900 shadow-2xl border border-slate-200 dark:border-slate-700"
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-900">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-slate-800 dark:to-slate-900">
           <div>
-            <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Edit Field Configuration</p>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Update & Re-extract</h2>
+            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Edit Field Configuration</p>
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Update & Re-extract</h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-full text-gray-500 hover:text-gray-900 hover:bg-white/80 dark:hover:bg-slate-800"
+            className="p-2 rounded-full text-slate-500 hover:text-slate-900 hover:bg-white/80 dark:hover:bg-slate-800"
             aria-label="Close dialog"
           >
             <X className="h-5 w-5" />
@@ -115,7 +115,7 @@ export default function FieldEditModal({
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
               Field Name <span className="text-red-500">*</span>
             </label>
             <Input
@@ -125,19 +125,19 @@ export default function FieldEditModal({
               placeholder="e.g., Invoice Number, Total Amount"
               required
             />
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               The name of the field to extract from the document
             </p>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
               Field Type <span className="text-red-500">*</span>
             </label>
             <select
               value={editedFieldType}
               onChange={(e) => setEditedFieldType(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               {FIELD_TYPES.map((type) => (
                 <option key={type.value} value={type.value}>
@@ -145,16 +145,16 @@ export default function FieldEditModal({
                 </option>
               ))}
             </select>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               The data type helps Azure AI better understand what to extract
             </p>
           </div>
 
-          <div className="p-4 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
-            <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">Current Value:</p>
-            <p className="text-sm text-gray-900 dark:text-white font-medium">{field.value || "(empty)"}</p>
+          <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+            <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">Current Value:</p>
+            <p className="text-sm text-slate-900 dark:text-white font-medium">{field.value || "(empty)"}</p>
             {field.confidence !== null && (
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 Confidence: {(field.confidence * 100).toFixed(1)}%
               </p>
             )}
@@ -167,12 +167,12 @@ export default function FieldEditModal({
           )}
         </div>
 
-        <div className="px-6 py-4 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/60 flex items-center justify-end gap-3">
+        <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 flex items-center justify-end gap-3">
           <Button
             type="button"
             variant="outline"
             onClick={onClose}
-            className="text-gray-700 dark:text-gray-200"
+            className="text-slate-700 dark:text-slate-200"
             disabled={isSaving}
           >
             Cancel

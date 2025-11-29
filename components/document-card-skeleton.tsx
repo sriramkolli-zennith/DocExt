@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export default function DocumentCardSkeleton() {
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden rounded-2xl border-slate-200/60 dark:border-slate-800/80 bg-white dark:bg-slate-900/90 shadow-sm">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 space-y-2">

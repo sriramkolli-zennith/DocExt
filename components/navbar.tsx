@@ -38,10 +38,10 @@ export default function Navbar() {
   }
 
   const navLinkClass = (href: string) => {
-    return `flex items-center gap-2 text-sm transition ${
+    return `flex items-center gap-2 text-sm transition-all ${
       isActive(href)
-        ? "text-gray-900 dark:text-white font-semibold"
-        : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+        ? "text-indigo-600 dark:text-indigo-400 font-semibold"
+        : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
     }`
   }
 
@@ -50,11 +50,13 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="border-b bg-card sticky top-0 z-50 border-gray-200 dark:border-slate-700">
+    <nav className="border-b bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl sticky top-0 z-50 border-slate-200/60 dark:border-slate-800/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 font-bold text-lg shrink-0 text-gray-900 dark:text-white">
-          <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-gray-900 dark:text-white" />
-          <span className="hidden sm:inline">DocExtract</span>
+        <Link href="/" className="flex items-center gap-2.5 font-bold text-lg shrink-0 text-slate-900 dark:text-white">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 shadow-md shadow-indigo-500/30">
+            <FileText className="h-4 w-4 text-white" />
+          </div>
+          <span className="hidden sm:inline bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">DocExtract</span>
         </Link>
 
         {/* Desktop Menu */}
@@ -77,12 +79,12 @@ export default function Navbar() {
           ) : (
             <>
               <Link href="/auth/login">
-                <Button variant="ghost" size="sm" className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700">
+                <Button variant="ghost" size="sm" className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 font-medium">
                   Log In
                 </Button>
               </Link>
               <Link href="/auth/sign-up">
-                <Button size="sm" className="bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black">Sign Up</Button>
+                <Button size="sm" className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-md shadow-indigo-500/25 font-semibold">Sign Up</Button>
               </Link>
             </>
           )}
@@ -105,13 +107,13 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="md:hidden border-t bg-card border-gray-200 dark:border-slate-700">
-          <div className="px-4 py-3 space-y-2">
+        <div className="md:hidden border-t bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl border-slate-200/60 dark:border-slate-800/80">
+          <div className="px-4 py-3 space-y-1">
             {user ? (
               <>
                 <Link
                   href="/dashboard"
-                  className="block px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 dark:hover:bg-slate-700"
+                  className="block px-3 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all"
                   onClick={() => setIsOpen(false)}
                 >
                   <div className={navLinkClass("/dashboard")}>
@@ -121,7 +123,7 @@ export default function Navbar() {
                 </Link>
                 <Link
                   href="/documents"
-                  className="block px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 dark:hover:bg-slate-700"
+                  className="block px-3 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all"
                   onClick={() => setIsOpen(false)}
                 >
                   <div className={navLinkClass("/documents")}>
@@ -131,7 +133,7 @@ export default function Navbar() {
                 </Link>
                 <Link
                   href="/account/profile"
-                  className="block px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 dark:hover:bg-slate-700"
+                  className="block px-3 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all"
                   onClick={() => setIsOpen(false)}
                 >
                   <div className={navLinkClass("/account/profile")}>
@@ -144,14 +146,14 @@ export default function Navbar() {
               <>
                 <Link
                   href="/auth/login"
-                  className="block px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                  className="block px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all"
                   onClick={() => setIsOpen(false)}
                 >
                   Log In
                 </Link>
                 <Link
                   href="/auth/sign-up"
-                  className="block px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                  className="block px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all"
                   onClick={() => setIsOpen(false)}
                 >
                   Sign Up

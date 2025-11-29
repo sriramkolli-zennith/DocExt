@@ -82,7 +82,7 @@ const DialogTitle = ({ children, className = "" }: DialogTitleProps) => {
 
 const DialogDescription = ({ children, className = "" }: DialogDescriptionProps) => {
   return (
-    <p className={`text-sm text-gray-500 ${className}`}>
+    <p className={`text-sm text-slate-500 dark:text-slate-400 ${className}`}>
       {children}
     </p>
   )

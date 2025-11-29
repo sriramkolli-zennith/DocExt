@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export default function NavbarSkeleton() {
   return (
-    <nav className="border-b bg-card sticky top-0 z-50">
+    <nav className="border-b border-slate-200/60 dark:border-slate-800/80 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
         {/* Logo Skeleton */}
         <div className="flex items-center gap-2 shrink-0">

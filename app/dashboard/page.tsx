@@ -58,9 +58,10 @@ async function fetchDashboardData(userId: string): Promise<{ documents: Document
 
 async function DashboardDataWrapper() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
   
-  if (!user) {
+  const { data: { user }, error } = await supabase.auth.getUser()
+  
+  if (error || !user) {
     redirect("/auth/login")
   }
 
@@ -71,7 +72,7 @@ async function DashboardDataWrapper() {
 
 export default function DashboardPage() {
   return (
-    <div className="min-h-screen bg-background text-gray-900 dark:text-white">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
       <Navbar />
       <Suspense fallback={<DashboardSkeleton />}>
         <DashboardDataWrapper />

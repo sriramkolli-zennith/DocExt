@@ -505,10 +505,10 @@ export function PDFViewerSidebar({
 
   const confidenceLevel = !confidence ? 0 : confidence > 0.8 ? 3 : confidence > 0.6 ? 2 : 1
   const confidenceBadgeColors = [
-    "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200",
-    "bg-gray-500 text-white dark:bg-gray-400 dark:text-gray-900",
-    "bg-gray-400 text-gray-900 dark:bg-gray-500 dark:text-gray-100",
-    "bg-gray-300 text-gray-900 dark:bg-gray-600 dark:text-gray-100"
+    "bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200",
+    "bg-slate-500 text-white dark:bg-slate-400 dark:text-slate-900",
+    "bg-slate-400 text-slate-900 dark:bg-slate-500 dark:text-slate-100",
+    "bg-slate-300 text-slate-900 dark:bg-slate-600 dark:text-slate-100"
   ]
   const confidenceLabels = ["No Data", "Low", "Medium", "High"]
 
@@ -524,12 +524,12 @@ export function PDFViewerSidebar({
 
       {/* Sidebar */}
       <div
-        className={`fixed top-0 right-0 h-screen bg-card border-l border-gray-300 dark:border-slate-700 shadow-2xl z-[70] transition-all duration-300 ease-out ${
+        className={`fixed top-0 right-0 h-screen bg-white dark:bg-slate-900 border-l border-slate-200/60 dark:border-slate-800 shadow-2xl z-[70] transition-all duration-300 ease-out ${
           isOpen ? "w-full lg:w-1/2" : "w-0"
         } overflow-hidden flex flex-col`}
       >
         {/* Controls Bar */}
-        <div className="border-b border-gray-300 dark:border-slate-700 px-4 sm:px-6 py-3 flex items-center justify-between bg-gray-50 dark:bg-slate-800 sticky top-0 z-[75] shrink-0">
+        <div className="border-b border-slate-300 dark:border-slate-700 px-4 sm:px-6 py-3 flex items-center justify-between bg-slate-50 dark:bg-slate-800 sticky top-0 z-[75] shrink-0">
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -540,7 +540,7 @@ export function PDFViewerSidebar({
             >
               <ZoomOut className="h-4 w-4" />
             </Button>
-            <span className="text-sm text-gray-700 dark:text-gray-300 min-w-[60px] text-center">
+            <span className="text-sm text-slate-700 dark:text-slate-300 min-w-[60px] text-center">
               {Math.round(scale * 100)}%
             </span>
             <Button
@@ -557,7 +557,7 @@ export function PDFViewerSidebar({
             <span className={`text-xs font-semibold px-2 py-1 rounded ${confidenceBadgeColors[confidenceLevel]}`}>
               {confidenceLabels[confidenceLevel]}
             </span>
-            <span className="text-sm text-gray-700 dark:text-gray-300">
+            <span className="text-sm text-slate-700 dark:text-slate-300">
               Page {currentPage} of {numPages}
             </span>
             {autoCloseEnabled && countdown > 0 && (
@@ -569,7 +569,7 @@ export function PDFViewerSidebar({
               variant="ghost"
               size="icon"
               onClick={onClose}
-              className="shrink-0 h-8 w-8 rounded-full border-2 border-black dark:border-white bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-gray-800 hover:border-gray-600 dark:hover:border-gray-400 ml-2"
+              className="shrink-0 h-8 w-8 rounded-full border-2 border-black dark:border-white bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800 hover:border-slate-600 dark:hover:border-slate-400 ml-2"
               title="Close (ESC)"
             >
               <X className="h-5 w-5 text-black dark:text-white font-bold stroke-[3]" />
@@ -580,26 +580,26 @@ export function PDFViewerSidebar({
         {/* PDF Viewer Section */}
         <div 
           ref={scrollContainerRef}
-          className="flex-1 overflow-auto bg-gray-100 dark:bg-slate-950 relative"
+          className="flex-1 overflow-auto bg-slate-100 dark:bg-slate-950 relative"
         >
           {pdfLoading && !pdfError && (
             <div className="absolute inset-0 flex items-center justify-center bg-white/90 dark:bg-slate-950/90 z-20">
               <div className="text-center space-y-3">
                 <div className="inline-block">
-                  <div className="animate-spin rounded-full h-10 w-10 border-3 border-gray-300 dark:border-slate-700 border-t-gray-900 dark:border-t-white"></div>
+                  <div className="animate-spin rounded-full h-10 w-10 border-3 border-slate-300 dark:border-slate-700 border-t-slate-900 dark:border-t-white"></div>
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Loading PDF...</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">Loading PDF...</p>
               </div>
             </div>
           )}
 
           {pdfError && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-100/80 dark:bg-gray-900/20 z-20">
-              <div className="text-center space-y-3 p-4 bg-card rounded-lg border border-gray-300 dark:border-gray-700">
-                <AlertCircle className="h-10 w-10 text-gray-900 dark:text-white mx-auto" />
+            <div className="absolute inset-0 flex items-center justify-center bg-slate-100/80 dark:bg-slate-900/20 z-20">
+              <div className="text-center space-y-3 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/60 dark:border-slate-700">
+                <AlertCircle className="h-10 w-10 text-slate-900 dark:text-white mx-auto" />
                 <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">Failed to load PDF</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">Failed to load PDF</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
                     {pdfUrl || "No URL provided"}
                   </p>
                 </div>
@@ -610,7 +610,7 @@ export function PDFViewerSidebar({
                     setPdfError(false)
                     setPdfLoading(true)
                   }}
-                  className="border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
+                  className="border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
                 >
                   Retry
                 </Button>
@@ -648,7 +648,7 @@ export function PDFViewerSidebar({
                         scale={scale}
                         renderTextLayer={false}
                         renderAnnotationLayer={false}
-                        className="shadow-lg border border-gray-300 dark:border-slate-700"
+                        className="shadow-lg border border-slate-300 dark:border-slate-700"
                         onLoadSuccess={(pageArg: any) => {
                           const loadedPage = pageArg as PDFPageProxy
                           const viewport = loadedPage.getViewport({ scale: 1 })
@@ -677,8 +677,8 @@ export function PDFViewerSidebar({
               </Document>
             ) : (
               <div className="flex flex-col items-center justify-center gap-3 text-center p-6">
-                <AlertCircle className="h-10 w-10 text-gray-400 dark:text-gray-600" />
-                <p className="text-sm text-gray-600 dark:text-gray-400">No PDF URL available</p>
+                <AlertCircle className="h-10 w-10 text-slate-400 dark:text-slate-600" />
+                <p className="text-sm text-slate-600 dark:text-slate-400">No PDF URL available</p>
               </div>
             )}
           </div>

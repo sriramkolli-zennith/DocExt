@@ -5,7 +5,7 @@ import NavbarSkeleton from "@/components/navbar-skeleton"
 
 export default function DocumentsLoading() {
   return (
-    <div className="min-h-screen bg-linear-to-b from-background to-muted">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <NavbarSkeleton />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10">

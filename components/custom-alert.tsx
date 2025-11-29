@@ -76,7 +76,7 @@ export function CustomAlert({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-white dark:bg-slate-950 text-gray-900 dark:text-white border border-gray-200 dark:border-slate-800">
+      <DialogContent className="max-w-md bg-white dark:bg-slate-900 text-slate-900 dark:text-white border border-slate-200/60 dark:border-slate-800 rounded-2xl shadow-xl">
         <button
           onClick={() => onOpenChange(false)}
           className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-white dark:ring-offset-slate-950 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-gray-950 dark:focus:ring-white focus:ring-offset-2"
@@ -91,9 +91,9 @@ export function CustomAlert({
               <Icon className={`h-6 w-6 ${style.iconColor}`} />
             </div>
             <div className="flex-1 pt-1">
-              <DialogTitle className="text-left text-xl text-gray-900 dark:text-white">{title}</DialogTitle>
+              <DialogTitle className="text-left text-xl text-slate-900 dark:text-white">{title}</DialogTitle>
               {description && (
-                <DialogDescription className="text-left mt-2 text-base text-gray-600 dark:text-gray-300">
+                <DialogDescription className="text-left mt-2 text-base text-slate-600 dark:text-slate-300">
                   {description}
                 </DialogDescription>
               )}
@@ -107,7 +107,7 @@ export function CustomAlert({
               <Button
                 variant="outline"
                 onClick={handleCancel}
-                className="sm:mr-2 border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-200"
+                className="sm:mr-2 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200"
               >
                 {cancelText}
               </Button>

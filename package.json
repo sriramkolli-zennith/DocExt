@@ -49,6 +49,7 @@
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "baseline-browser-mapping": "^2.8.32",
     "postcss": "^8.5",
     "supabase": "^1.226.4",
     "tailwindcss": "^4.1.9",

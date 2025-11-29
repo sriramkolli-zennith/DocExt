@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { X, Check, TrendingUp } from "lucide-react"
+import { X, Check, Sparkles } from "lucide-react"
 
 interface Alternative {
   value: string
@@ -31,115 +31,145 @@ export default function FieldValidationModal({
   if (!isOpen) return null
 
   const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 0.9) return 'bg-green-500'
-    if (confidence >= 0.8) return 'bg-blue-500'
-    if (confidence >= 0.7) return 'bg-yellow-500'
-    return 'bg-orange-500'
+    if (confidence >= 0.9) return 'from-emerald-500 to-teal-500'
+    if (confidence >= 0.8) return 'from-blue-500 to-indigo-500'
+    if (confidence >= 0.7) return 'from-amber-400 to-orange-500'
+    return 'from-rose-400 to-red-500'
   }
 
   const getConfidenceBgColor = (confidence: number) => {
     if (confidence >= 0.9) {
-      return 'bg-green-50 border-green-200 hover:border-green-400 hover:bg-green-100 dark:bg-green-900/20 dark:border-green-800 dark:hover:border-green-500/60'
+      return 'bg-emerald-50/80 border-emerald-200/60 hover:border-emerald-400 hover:bg-emerald-50 hover:shadow-emerald-500/10 dark:bg-emerald-950/30 dark:border-emerald-500/30 dark:hover:border-emerald-500/60'
     }
     if (confidence >= 0.8) {
-      return 'bg-blue-50 border-blue-200 hover:border-blue-400 hover:bg-blue-100 dark:bg-blue-900/20 dark:border-blue-800 dark:hover:border-blue-500/60'
+      return 'bg-blue-50/80 border-blue-200/60 hover:border-blue-400 hover:bg-blue-50 hover:shadow-blue-500/10 dark:bg-blue-950/30 dark:border-blue-500/30 dark:hover:border-blue-500/60'
     }
     if (confidence >= 0.7) {
-      return 'bg-yellow-50 border-yellow-200 hover:border-yellow-400 hover:bg-yellow-100 dark:bg-yellow-900/20 dark:border-yellow-800 dark:hover:border-yellow-500/60'
+      return 'bg-amber-50/80 border-amber-200/60 hover:border-amber-400 hover:bg-amber-50 hover:shadow-amber-500/10 dark:bg-amber-950/30 dark:border-amber-500/30 dark:hover:border-amber-500/60'
     }
-    return 'bg-orange-50 border-orange-200 hover:border-orange-400 hover:bg-orange-100 dark:bg-orange-900/20 dark:border-orange-800 dark:hover:border-orange-500/60'
+    return 'bg-rose-50/80 border-rose-200/60 hover:border-rose-400 hover:bg-rose-50 hover:shadow-rose-500/10 dark:bg-rose-950/30 dark:border-rose-500/30 dark:hover:border-rose-500/60'
+  }
+
+  const getConfidenceText = (confidence: number) => {
+    if (confidence >= 0.9) return 'text-emerald-700 dark:text-emerald-400'
+    if (confidence >= 0.8) return 'text-blue-700 dark:text-blue-400'
+    if (confidence >= 0.7) return 'text-amber-700 dark:text-amber-400'
+    return 'text-rose-700 dark:text-rose-400'
   }
 
   const hasAlternatives = Array.isArray(alternatives) && alternatives.length > 0
   const alternativeCount = hasAlternatives ? alternatives.length : 0
-  const gridColumns = alternativeCount > 1 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'
+  const gridColumns = alternativeCount > 1 ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-950 rounded-2xl max-w-4xl w-full max-h-[92vh] overflow-hidden flex flex-col shadow-2xl border border-gray-200 dark:border-slate-800">
+    <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-slate-950 rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl shadow-slate-900/20 dark:shadow-black/40 border border-slate-200/60 dark:border-slate-800/80">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-slate-900/70">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 dark:border-slate-800/80 bg-gradient-to-r from-indigo-50/80 via-violet-50/50 to-slate-50/30 dark:from-indigo-950/40 dark:via-violet-950/30 dark:to-slate-900/50">
           <div className="flex-1">
-            <p className="text-xs font-semibold text-blue-600 dark:text-blue-300 uppercase tracking-wide mb-1">Select the best value</p>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white break-words">{fieldName}</h2>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="flex h-5 w-5 items-center justify-center rounded-md bg-indigo-500/10 dark:bg-indigo-500/20">
+                <Sparkles className="h-3 w-3 text-indigo-600 dark:text-indigo-400" />
+              </span>
+              <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">Select the best value</p>
+            </div>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white break-words tracking-tight">{fieldName}</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-white/80 dark:hover:bg-slate-800 transition-colors"
+            className="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
             aria-label="Close validation modal"
           >
-            <X className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+            <X className="h-5 w-5 text-slate-500 dark:text-slate-400" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto p-6 space-y-6 bg-gray-50 dark:bg-slate-950">
+        <div className="flex-1 overflow-auto p-6 space-y-6 bg-slate-50/50 dark:bg-slate-950">
           {currentValue && (
-            <div className="space-y-2">
-              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                <span className="w-2 h-2 bg-gray-400 rounded-full" />
-                Currently displayed value
+            <div className="space-y-2.5">
+              <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-slate-400 rounded-full" />
+                Current value
               </p>
-              <div className="p-4 bg-white dark:bg-slate-900 border border-dashed border-gray-300 dark:border-slate-700 rounded-xl shadow-sm">
-                <p className="font-semibold text-gray-900 dark:text-white text-base break-words leading-snug">{currentValue}</p>
+              <div className="p-4 bg-white dark:bg-slate-900/80 border border-dashed border-slate-300 dark:border-slate-700 rounded-2xl shadow-sm">
+                <p className="font-semibold text-slate-800 dark:text-slate-200 text-base break-words leading-relaxed">{currentValue}</p>
               </div>
             </div>
           )}
 
           <div className="space-y-4">
-            <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-blue-600" />
-              Top {Math.min(alternativeCount, 3)} alternative values from Azure
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
+              <span className="flex h-5 w-5 items-center justify-center rounded-md bg-indigo-500/10 dark:bg-indigo-500/20">
+                <svg className="h-3 w-3 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+              </span>
+              Top {Math.min(alternativeCount, 3)} alternatives from AI
             </p>
 
             {hasAlternatives ? (
-              <div className={`grid gap-3 ${gridColumns}`}>
+              <div className={`grid gap-4 ${gridColumns}`}>
                 {alternatives.map((alt, index) => (
                   <button
                     key={index}
                     onClick={() => onSelectAlternative(alt.index !== undefined ? alt.index : index)}
-                    className={`relative w-full text-left p-4 rounded-xl border transition-all group ${getConfidenceBgColor(alt.confidence)} dark:border-slate-700 dark:bg-slate-900/80`}
+                    className={`relative w-full text-left p-5 rounded-2xl border-2 transition-all duration-200 group hover:shadow-lg ${getConfidenceBgColor(alt.confidence)}`}
                   >
-                    <div className="flex items-center justify-between text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                      <span className="font-semibold">Option {index + 1}</span>
-                      <span>{(alt.confidence * 100).toFixed(1)}% confidence</span>
+                    {/* Option badge */}
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-white/60 dark:bg-slate-800/60 text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 ring-1 ring-inset ring-slate-200/60 dark:ring-slate-700/60">
+                        Option {index + 1}
+                      </span>
+                      <span className={`text-xs font-bold tabular-nums ${getConfidenceText(alt.confidence)}`}>
+                        {(alt.confidence * 100).toFixed(0)}%
+                      </span>
                     </div>
-                    <p className="mt-3 text-base font-semibold text-gray-900 dark:text-white leading-snug break-words">
+                    
+                    {/* Value */}
+                    <p className="text-base font-semibold text-slate-800 dark:text-slate-100 leading-relaxed break-words mb-4">
                       {alt.value}
                     </p>
-                    <div className="mt-3 flex items-center justify-between text-xs text-gray-600 dark:text-gray-300">
-                      <span>Page {alt.pageNumber}</span>
-                      <span className="font-medium text-blue-600 dark:text-blue-400">Apply this value</span>
+                    
+                    {/* Footer */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Page {alt.pageNumber}</span>
+                      <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 group-hover:translate-x-0.5 transition-transform">
+                        Apply →
+                      </span>
                     </div>
-                    <div className="mt-3 h-1.5 bg-white/60 dark:bg-slate-800 rounded-full overflow-hidden">
+                    
+                    {/* Confidence bar */}
+                    <div className="mt-4 h-1.5 bg-white/80 dark:bg-slate-800/80 rounded-full overflow-hidden">
                       <div
-                        className={`h-full ${getConfidenceColor(alt.confidence)}`}
+                        className={`h-full bg-gradient-to-r ${getConfidenceColor(alt.confidence)} rounded-full transition-all`}
                         style={{ width: `${Math.min(alt.confidence * 100, 100)}%` }}
                       />
                     </div>
-                    <div className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-blue-500/60" aria-hidden="true" />
+                    
+                    {/* Hover ring */}
+                    <div className="absolute inset-0 rounded-2xl ring-2 ring-transparent group-hover:ring-indigo-500/40 transition-all" aria-hidden="true" />
                   </button>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12 border border-dashed border-gray-300 dark:border-slate-700 rounded-xl">
-                <div className="inline-block p-4 bg-white dark:bg-slate-900 rounded-full mb-4 border border-gray-200 dark:border-slate-700">
-                  <X className="h-8 w-8 text-gray-400" />
+              <div className="text-center py-16 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-white/50 dark:bg-slate-900/30">
+                <div className="inline-flex p-4 bg-slate-100 dark:bg-slate-800 rounded-2xl mb-4">
+                  <X className="h-8 w-8 text-slate-400" />
                 </div>
-                <p className="text-gray-500 dark:text-gray-400 font-medium">No alternative values available</p>
+                <p className="text-slate-600 dark:text-slate-400 font-semibold">No alternatives available</p>
+                <p className="text-sm text-slate-500 dark:text-slate-500 mt-1">The AI couldn&apos;t find other values for this field</p>
               </div>
             )}
           </div>
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+        <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800/80 bg-white dark:bg-slate-950">
           <Button
             variant="outline"
             onClick={onClose}
-            className="w-full border-gray-300 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-900"
+            className="w-full h-11 font-semibold border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-xl transition-all"
           >
-            Close
+            Cancel
           </Button>
         </div>
       </div>

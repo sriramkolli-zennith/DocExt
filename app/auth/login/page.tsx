@@ -69,7 +69,7 @@ export default function LoginPage() {
     >
       <form onSubmit={handleLogin} className="space-y-4 sm:space-y-5">
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-gray-900 dark:text-white">Email</Label>
+          <Label htmlFor="email" className="text-slate-700 dark:text-slate-300 font-medium">Email</Label>
           <Input
             id="email"
             type="email"
@@ -77,13 +77,13 @@ export default function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+            className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           />
         </div>
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password" className="text-gray-900 dark:text-white">Password</Label>
-            <Link href="/auth/forgot-password" className="text-sm text-gray-900 dark:text-white hover:underline">
+            <Label htmlFor="password" className="text-slate-700 dark:text-slate-300 font-medium">Password</Label>
+            <Link href="/auth/forgot-password" className="text-sm text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
               Forgot password?
             </Link>
           </div>
@@ -95,18 +95,18 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="pr-10 bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+              className="pr-10 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
         </div>
-        <Button type="submit" className="w-full bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black disabled:opacity-60" disabled={isLoading}>
+        <Button type="submit" className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-md shadow-indigo-500/25 font-semibold rounded-xl disabled:opacity-60" disabled={isLoading}>
           {isLoading ? "Signing in..." : "Sign In"}
         </Button>
       </form>

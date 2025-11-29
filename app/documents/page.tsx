@@ -148,17 +148,20 @@ export default function DocumentsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
         <Navbar />
         <div className="flex items-center justify-center h-96">
-          <p className="text-gray-600 dark:text-gray-400">Loading documents...</p>
+          <div className="flex items-center gap-3">
+            <div className="h-5 w-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-slate-600 dark:text-slate-400">Loading documents...</p>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background text-gray-900 dark:text-white">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
       <Navbar />
       <SessionWarningModal open={showWarning} onExtend={extendSession} />
 
@@ -166,11 +169,11 @@ export default function DocumentsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 sm:mb-10 gap-4">
           <div className="w-full sm:w-auto">
-            <h1 className="text-3xl sm:text-4xl font-bold mb-2">Documents</h1>
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Browse and manage all your documents</p>
+            <h1 className="text-3xl sm:text-4xl font-bold mb-2 bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">Documents</h1>
+            <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400">Browse and manage all your documents</p>
           </div>
           <Link href="/extract" className="w-full sm:w-auto">
-            <Button size="lg" className="gap-2 w-full sm:w-auto bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black">
+            <Button size="lg" className="gap-2 w-full sm:w-auto bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold shadow-md shadow-indigo-500/25 hover:shadow-lg hover:shadow-indigo-500/30 transition-all rounded-xl">
               <Plus className="h-5 w-5" />
               New Extraction
             </Button>
@@ -181,12 +184,12 @@ export default function DocumentsPage() {
         <div className="mb-8 sm:mb-10 space-y-3 sm:space-y-4">
           <div className="flex flex-col lg:flex-row gap-3 sm:gap-4">
             <div className="flex-1 relative min-w-0">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500 shrink-0 pointer-events-none" />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400 dark:text-slate-500 shrink-0 pointer-events-none" />
               <Input
                 placeholder="Search documents..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 w-full text-sm sm:text-base bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400"
+                className="pl-11 h-11 w-full text-sm sm:text-base bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-indigo-300 dark:focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 rounded-xl transition-all"
               />
             </div>
             <div className="flex gap-2 overflow-x-auto pb-2 lg:pb-0">
@@ -195,10 +198,10 @@ export default function DocumentsPage() {
                   key={status}
                   variant={statusFilter === status ? "default" : "outline"}
                   onClick={() => setStatusFilter(status)}
-                  className={`whitespace-nowrap text-xs sm:text-sm ${
+                  className={`whitespace-nowrap text-xs sm:text-sm rounded-xl font-medium transition-all ${
                     statusFilter === status 
-                      ? "bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black" 
-                      : "bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                      ? "bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-md shadow-indigo-500/25" 
+                      : "bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
                   }`}
                 >
                   {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -210,27 +213,29 @@ export default function DocumentsPage() {
 
         {/* Documents Grid */}
         {filteredDocuments.length === 0 ? (
-          <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
-            <CardContent className="flex flex-col items-center justify-center py-16 sm:py-20">
-              <FileText className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400 dark:text-gray-500 mb-4" />
-              <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2">
+          <div className="rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/30">
+            <div className="flex flex-col items-center justify-center py-16 sm:py-20">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-100 to-violet-100 dark:from-indigo-500/20 dark:to-violet-500/20 mb-4">
+                <FileText className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mb-2">
                 {documents.length === 0 ? "No documents yet" : "No results found"}
               </h3>
-              <p className="text-gray-600 dark:text-gray-400 text-center mb-6 text-sm sm:text-base">
+              <p className="text-slate-500 dark:text-slate-400 text-center mb-6 text-sm sm:text-base max-w-md">
                 {documents.length === 0
                   ? "Start by uploading a document to extract data"
                   : "Try adjusting your search or filters"}
               </p>
               {documents.length === 0 && (
                 <Link href="/extract">
-                  <Button className="gap-2 bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black">
+                  <Button className="gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold shadow-md shadow-indigo-500/25 hover:shadow-lg hover:shadow-indigo-500/30 transition-all rounded-xl">
                     <Plus className="h-4 w-4" />
                     Create Your First Extraction
                   </Button>
                 </Link>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
             {filteredDocuments.map((doc) => (

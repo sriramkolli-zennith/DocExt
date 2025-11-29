@@ -119,11 +119,11 @@ export default function DashboardContent({ initialDocuments, initialStats }: Das
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 sm:mb-10 gap-4">
           <div className="w-full sm:w-auto">
-            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-2">Dashboard</h1>
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Overview of your document extraction activity</p>
+            <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent mb-2">Dashboard</h1>
+            <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400">Overview of your document extraction activity</p>
           </div>
           <Link href="/extract" className="w-full sm:w-auto">
-            <Button size="lg" className="gap-2 w-full sm:w-auto bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black">
+            <Button size="lg" className="gap-2 w-full sm:w-auto bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold shadow-md shadow-indigo-500/25 hover:shadow-lg hover:shadow-indigo-500/30 transition-all rounded-xl">
               <Plus className="h-5 w-5" />
               New Extraction
             </Button>
@@ -132,88 +132,86 @@ export default function DashboardContent({ initialDocuments, initialStats }: Das
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 lg:gap-6 mb-8 sm:mb-10">
-          <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:shadow-lg dark:hover:shadow-slate-900 transition">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">Total Documents</p>
-                  <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1">{stats.total}</p>
-                </div>
-                <FileText className="h-8 w-8 sm:h-10 sm:w-10 text-gray-900 dark:text-white opacity-80" />
+          <div className="rounded-2xl border border-slate-200/60 dark:border-slate-800/80 bg-white dark:bg-slate-900/90 shadow-sm shadow-slate-200/50 dark:shadow-none p-5 sm:p-6 hover:shadow-md transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">Total Documents</p>
+                <p className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mt-1">{stats.total}</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-800/50">
+                <FileText className="h-6 w-6 text-slate-600 dark:text-slate-400" />
+              </div>
+            </div>
+          </div>
 
-          <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:shadow-lg dark:hover:shadow-slate-900 transition">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">Completed</p>
-                  <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1">{stats.completed}</p>
-                </div>
-                <CheckCircle2 className="h-8 w-8 sm:h-10 sm:w-10 text-gray-900 dark:text-white opacity-80" />
+          <div className="rounded-2xl border border-slate-200/60 dark:border-slate-800/80 bg-white dark:bg-slate-900/90 shadow-sm shadow-slate-200/50 dark:shadow-none p-5 sm:p-6 hover:shadow-md transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">Completed</p>
+                <p className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">{stats.completed}</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-50 dark:from-emerald-500/20 dark:to-emerald-500/10">
+                <CheckCircle2 className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+              </div>
+            </div>
+          </div>
 
-          <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:shadow-lg dark:hover:shadow-slate-900 transition">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">Processing</p>
-                  <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1">{stats.processing}</p>
-                </div>
-                <Clock className="h-8 w-8 sm:h-10 sm:w-10 text-gray-900 dark:text-white opacity-80" />
+          <div className="rounded-2xl border border-slate-200/60 dark:border-slate-800/80 bg-white dark:bg-slate-900/90 shadow-sm shadow-slate-200/50 dark:shadow-none p-5 sm:p-6 hover:shadow-md transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">Processing</p>
+                <p className="text-2xl sm:text-3xl font-bold text-amber-600 dark:text-amber-400 mt-1">{stats.processing}</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 dark:from-amber-500/20 dark:to-amber-500/10">
+                <Clock className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+              </div>
+            </div>
+          </div>
 
-          <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:shadow-lg dark:hover:shadow-slate-900 transition">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">Success Rate</p>
-                  <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1">{stats.successRate.toFixed(0)}%</p>
-                </div>
-                <TrendingUp className="h-8 w-8 sm:h-10 sm:w-10 text-gray-900 dark:text-white opacity-80" />
+          <div className="rounded-2xl border border-slate-200/60 dark:border-slate-800/80 bg-white dark:bg-slate-900/90 shadow-sm shadow-slate-200/50 dark:shadow-none p-5 sm:p-6 hover:shadow-md transition-all">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">Success Rate</p>
+                <p className="text-2xl sm:text-3xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">{stats.successRate.toFixed(0)}%</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-100 to-violet-50 dark:from-indigo-500/20 dark:to-violet-500/10">
+                <TrendingUp className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Recent Uploads */}
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-6">Recent Uploads</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-4 sm:mb-6">Recent Uploads</h2>
           {recentDocs.length === 0 ? (
-            <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
-              <CardContent className="py-8 sm:py-12 text-center">
-                <p className="text-gray-600 dark:text-gray-400">No documents yet. Start your first extraction!</p>
-              </CardContent>
-            </Card>
+            <div className="rounded-2xl border border-slate-200/60 dark:border-slate-800/80 bg-white dark:bg-slate-900/90 shadow-sm">
+              <div className="py-8 sm:py-12 text-center">
+                <p className="text-slate-500 dark:text-slate-400">No documents yet. Start your first extraction!</p>
+              </div>
+            </div>
           ) : (
             <div className="space-y-3">
               {recentDocs.map((doc) => (
                 <Link key={doc.id} href={`/documents/${doc.id}`}>
-                  <Card className="hover:shadow-md transition cursor-pointer">
-                    <CardContent className="py-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <p className="font-medium line-clamp-1">{doc.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(doc.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          doc.status === "completed" ? "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200" :
-                          doc.status === "processing" ? "bg-gray-300 text-gray-900 dark:bg-gray-600 dark:text-gray-100" :
-                          doc.status === "failed" ? "bg-gray-400 text-gray-900 dark:bg-gray-500 dark:text-gray-100" :
-                          "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
-                        }`}>
-                          {doc.status}
-                        </span>
+                  <div className="rounded-xl border border-slate-200/60 dark:border-slate-800/80 bg-white dark:bg-slate-900/90 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all cursor-pointer p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-slate-800 dark:text-slate-200 truncate">{doc.name}</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                          {new Date(doc.created_at).toLocaleDateString()}
+                        </p>
                       </div>
-                    </CardContent>
-                  </Card>
+                      <span className={`px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wide ring-1 ring-inset ${
+                        doc.status === "completed" ? "bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/30" :
+                        doc.status === "processing" ? "bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-500/10 dark:text-amber-400 dark:ring-amber-500/30" :
+                        doc.status === "failed" ? "bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-500/10 dark:text-rose-400 dark:ring-rose-500/30" :
+                        "bg-slate-100 text-slate-600 ring-slate-500/20 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-500/30"
+                      }`}>
+                        {doc.status}
+                      </span>
+                    </div>
+                  </div>
                 </Link>
               ))}
             </div>
@@ -221,24 +219,26 @@ export default function DashboardContent({ initialDocuments, initialStats }: Das
         </div>
 
         {/* All Documents */}
-        <div className="mt-12">
-          <h2 className="text-xl font-semibold mb-4">All Documents</h2>
+        <div className="mt-10 sm:mt-12">
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-4 sm:mb-6">All Documents</h2>
           {documents.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No documents yet</h3>
-                <p className="text-muted-foreground mb-6">Start by uploading a document to extract data</p>
+            <div className="rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/30">
+              <div className="flex flex-col items-center justify-center py-12 sm:py-16">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-100 to-violet-100 dark:from-indigo-500/20 dark:to-violet-500/20 mb-4">
+                  <FileText className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-2">No documents yet</h3>
+                <p className="text-slate-500 dark:text-slate-400 mb-6 text-center max-w-md">Start by uploading a document to extract data</p>
                 <Link href="/extract">
-                  <Button className="gap-2">
+                  <Button className="gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold shadow-md shadow-indigo-500/25 hover:shadow-lg hover:shadow-indigo-500/30 transition-all rounded-xl">
                     <Plus className="h-4 w-4" />
                     Create Your First Extraction
                   </Button>
                 </Link>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
               {documents.map((doc) => (
                 <DocumentCard key={doc.id} document={doc} onDelete={handleDelete} />
               ))}
