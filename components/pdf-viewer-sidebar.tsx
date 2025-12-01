@@ -272,6 +272,42 @@ export function PDFViewerSidebar({
     })
   }, [clearAllCanvases, drawAnnotations])
 
+  const scrollToAnnotation = useCallback((pageNum: number, bbox: number[]) => {
+    const pageElement = pageRefs.current.get(pageNum)
+    const container = scrollContainerRef.current
+    
+    if (!pageElement || !container || !bbox || bbox.length < 8) return
+
+    const pageDimensions = pageDimensionsRef.current.get(pageNum)
+    if (!pageDimensions) {
+      pageElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return
+    }
+
+    const width = pageElement.clientWidth
+    const height = pageElement.clientHeight
+    const scaleX = width / pageDimensions.width
+    const scaleY = height / pageDimensions.height
+    const POINTS_PER_INCH = 72
+    const isNormalized = bbox[0] <= 1 && bbox[1] <= 1
+
+    let centerX = 0, centerY = 0
+    for (let i = 0; i < bbox.length; i += 2) {
+      const xInPoints = isNormalized ? bbox[i] * pageDimensions.width : bbox[i] * POINTS_PER_INCH
+      const yInPoints = isNormalized ? bbox[i + 1] * pageDimensions.height : bbox[i + 1] * POINTS_PER_INCH
+      centerX += xInPoints * scaleX
+      centerY += yInPoints * scaleY
+    }
+    centerX /= bbox.length / 2
+    centerY /= bbox.length / 2
+
+    const pageRect = pageElement.getBoundingClientRect()
+    const containerRect = container.getBoundingClientRect()
+    const scrollTarget = pageRect.top - containerRect.top + container.scrollTop + centerY - containerRect.height / 2
+
+    container.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' })
+  }, [])
+
   const scrollToPage = useCallback(
     (page: number) => {
       const pageElement = pageRefs.current.get(page)
@@ -350,61 +386,10 @@ export function PDFViewerSidebar({
     return () => clearTimeout(delay)
   }, [isOpen, autoCloseEnabled, autoCloseToken, startAutoCloseTimer])
 
-  useEffect(() => () => clearTimers(), [clearTimers])
-
-  const scrollToAnnotation = useCallback((pageNum: number, bbox: number[]) => {
-    const pageElement = pageRefs.current.get(pageNum)
-    const container = scrollContainerRef.current
+  // When field changes (autoCloseToken increments), redraw annotations and scroll
+  useEffect(() => {
+    if (!isOpen || autoCloseToken === 0 || pdfLoading || pdfError) return
     
-    if (!pageElement || !container || !bbox || bbox.length < 8) return
-
-    const pageDimensions = pageDimensionsRef.current.get(pageNum)
-    if (!pageDimensions) {
-      pageElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      return
-    }
-
-    const width = pageElement.clientWidth
-    const height = pageElement.clientHeight
-    const scaleX = width / pageDimensions.width
-    const scaleY = height / pageDimensions.height
-    const POINTS_PER_INCH = 72
-    const isNormalized = bbox[0] <= 1 && bbox[1] <= 1
-
-    let centerX = 0, centerY = 0
-    for (let i = 0; i < bbox.length; i += 2) {
-      const xInPoints = isNormalized ? bbox[i] * pageDimensions.width : bbox[i] * POINTS_PER_INCH
-      const yInPoints = isNormalized ? bbox[i + 1] * pageDimensions.height : bbox[i + 1] * POINTS_PER_INCH
-      centerX += xInPoints * scaleX
-      centerY += yInPoints * scaleY
-    }
-    centerX /= bbox.length / 2
-    centerY /= bbox.length / 2
-
-    const pageRect = pageElement.getBoundingClientRect()
-    const containerRect = container.getBoundingClientRect()
-    const scrollTarget = pageRect.top - containerRect.top + container.scrollTop + centerY - containerRect.height / 2
-
-    container.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' })
-  }, [])
-
-  // Initialize page and clear on URL change
-  useEffect(() => {
-    if (isOpen && pageNumber && pageNumber > 0) setCurrentPage(pageNumber)
-  }, [isOpen, pageNumber])
-
-  useEffect(() => {
-    pageDimensionsRef.current.clear()
-    canvasRefs.current.forEach((canvas) => canvas.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height))
-    setNumPages(0)
-    setPdfLoading(true)
-    setPdfError(false)
-  }, [pdfUrl])
-
-  // Main effect: draw annotations and scroll to primary target
-  useEffect(() => {
-    if (!isOpen || pdfLoading || pdfError) return
-
     if (annotationTargets.length === 0) {
       latestAnnotationsRef.current = []
       clearAllCanvases()
@@ -432,7 +417,24 @@ export function PDFViewerSidebar({
 
     const timer = setTimeout(waitForDimensions, 100)
     return () => clearTimeout(timer)
-  }, [annotationTargets, isOpen, pdfLoading, pdfError, drawAllCurrentAnnotations, scrollToAnnotation, clearAllCanvases])
+  }, [autoCloseToken, annotationTargets, isOpen, pdfLoading, pdfError, drawAllCurrentAnnotations, scrollToAnnotation, clearAllCanvases])
+
+  useEffect(() => () => clearTimers(), [clearTimers])
+
+  // Initialize page and clear on URL change
+  useEffect(() => {
+    if (isOpen && pageNumber && pageNumber > 0) setCurrentPage(pageNumber)
+  }, [isOpen, pageNumber])
+
+  useEffect(() => {
+    pageDimensionsRef.current.clear()
+    canvasRefs.current.forEach((canvas) => canvas.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height))
+    setNumPages(0)
+    setPdfLoading(true)
+    setPdfError(false)
+  }, [pdfUrl])
+
+
 
   // Redraw on scale change, clear on close, and handle resize
   useEffect(() => {

@@ -275,7 +275,7 @@ export function HomeHero({ user, loading }: { user: any; loading: boolean }) {
         
         {/* Scroll indicator */}
         <div className={`flex justify-center mt-12 transition-all duration-1000 delay-1000 ${heroInView ? 'opacity-100' : 'opacity-0'}`}>
-          <a href="#trusted-by" className="flex flex-col items-center gap-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors group">
+          <a href="#trusted-by" className="flex flex-col items-center gap-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors group cursor-pointer">
             <span className="text-xs font-medium uppercase tracking-wider">Scroll to explore</span>
             <ChevronDown className="h-5 w-5 animate-bounce" />
           </a>
@@ -660,7 +660,7 @@ export function HomeHowItWorks() {
             <button
               key={idx}
               onClick={() => setActiveStep(idx)}
-              className={`w-2 h-2 rounded-full transition-all duration-300 ${
+              className={`w-2 h-2 rounded-full transition-all duration-300 cursor-pointer ${
                 activeStep === idx 
                   ? 'w-8 bg-indigo-500' 
                   : 'bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-600'
@@ -781,7 +781,7 @@ export function HomeFooter() {
               {[Globe, Building2, Award].map((Icon, idx) => (
                 <button
                   key={idx}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 transition-all duration-300"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 transition-all duration-300 cursor-pointer"
                 >
                   <Icon className="h-4 w-4" />
                 </button>

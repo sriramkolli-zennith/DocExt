@@ -455,7 +455,7 @@ export default function ExtractPage() {
                   <button
                     type="button"
                     onClick={() => setShowSuggestions(!showSuggestions)}
-                    className="flex items-center gap-2 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors w-full"
+                    className="flex items-center gap-2 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors w-full cursor-pointer"
                   >
                     <Sparkles className="h-4 w-4" />
                     <span>Common Invoice Fields</span>

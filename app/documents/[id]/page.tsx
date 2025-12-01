@@ -707,7 +707,10 @@ export default function DocumentDetailPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={handleExportData}
+                    onClick={() => {
+                      setPdfSidebarOpen(false)
+                      handleExportData()
+                    }}
                     disabled={fields.length === 0 || isProcessing}
                     className="h-9 px-4 text-sm font-medium text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-700/80 shadow-sm hover:shadow transition-all"
                   >
@@ -716,7 +719,10 @@ export default function DocumentDetailPage() {
                   </Button>
                   <Button
                     size="sm"
-                    onClick={handleRerun}
+                    onClick={() => {
+                      setPdfSidebarOpen(false)
+                      handleRerun()
+                    }}
                     disabled={fields.length === 0 || isProcessing}
                     className="h-9 px-4 text-sm font-medium bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-md shadow-indigo-500/25 hover:shadow-lg hover:shadow-indigo-500/30 transition-all"
                   >
@@ -881,7 +887,7 @@ export default function DocumentDetailPage() {
                               setPdfSidebarOpen(true)
                               setPdfAutoCloseToken(prev => prev + 1)
                             }}
-                            className="lg:hidden p-2.5 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-all"
+                            className="lg:hidden p-2.5 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-all cursor-pointer"
                             title="View in PDF"
                           >
                             <Eye className="h-4 w-4" />
@@ -893,7 +899,7 @@ export default function DocumentDetailPage() {
                               setEditingField(field)
                               setIsEditModalOpen(true)
                             }}
-                            className="p-2.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-all"
+                            className="p-2.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-all cursor-pointer"
                             title="Edit field"
                           >
                             <Edit className="h-4 w-4" />
@@ -904,7 +910,7 @@ export default function DocumentDetailPage() {
                               setPdfSidebarOpen(false)
                               handleDeleteField(field.fieldId)
                             }}
-                            className="p-2.5 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
+                            className="p-2.5 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all cursor-pointer"
                             title="Delete field"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -918,7 +924,7 @@ export default function DocumentDetailPage() {
                                   handleThumbsUp(field)
                                 }}
                                 disabled={feedbackLoading === field.id || (field.feedbackAttemptCount || 0) >= 2}
-                                className={`p-2.5 rounded-xl transition-all ${
+                                className={`p-2.5 rounded-xl transition-all cursor-pointer ${
                                   field.userFeedback === 'thumbs_up'
                                     ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-500/15 dark:text-emerald-400 ring-1 ring-emerald-500/30'
                                     : (field.feedbackAttemptCount || 0) >= 2
@@ -936,7 +942,7 @@ export default function DocumentDetailPage() {
                                   handleThumbsDown(field)
                                 }}
                                 disabled={feedbackLoading === field.id || (field.feedbackAttemptCount || 0) >= 2}
-                                className={`p-2.5 rounded-xl transition-all ${
+                                className={`p-2.5 rounded-xl transition-all cursor-pointer ${
                                   field.userFeedback === 'thumbs_down'
                                     ? 'text-rose-600 bg-rose-50 dark:bg-rose-500/15 dark:text-rose-400 ring-1 ring-rose-500/30'
                                     : (field.feedbackAttemptCount || 0) >= 2

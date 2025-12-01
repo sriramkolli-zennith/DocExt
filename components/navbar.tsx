@@ -52,7 +52,7 @@ export default function Navbar() {
   return (
     <nav className="border-b bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl sticky top-0 z-50 border-slate-200/60 dark:border-slate-800/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2.5 font-bold text-lg shrink-0 text-slate-900 dark:text-white">
+        <Link href="/dashboard" className="flex items-center gap-2.5 font-bold text-lg shrink-0 text-slate-900 dark:text-white">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 shadow-md shadow-indigo-500/30">
             <FileText className="h-4 w-4 text-white" />
           </div>

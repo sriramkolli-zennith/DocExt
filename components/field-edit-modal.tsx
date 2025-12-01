@@ -99,7 +99,7 @@ export default function FieldEditModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-full text-slate-500 hover:text-slate-900 hover:bg-white/80 dark:hover:bg-slate-800"
+            className="p-2 rounded-full text-slate-500 hover:text-slate-900 hover:bg-white/80 dark:hover:bg-slate-800 cursor-pointer"
             aria-label="Close dialog"
           >
             <X className="h-5 w-5" />

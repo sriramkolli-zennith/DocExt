@@ -77,7 +77,7 @@ export default function FieldValidationModal({
           </div>
           <button
             onClick={onClose}
-            className="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+            className="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
             aria-label="Close validation modal"
           >
             <X className="h-5 w-5 text-slate-500 dark:text-slate-400" />
@@ -112,7 +112,7 @@ export default function FieldValidationModal({
                   <button
                     key={index}
                     onClick={() => onSelectAlternative(alt.index !== undefined ? alt.index : index)}
-                    className={`relative w-full text-left p-5 rounded-2xl border-2 transition-all duration-200 group hover:shadow-lg ${getConfidenceBgColor(alt.confidence)}`}
+                    className={`relative w-full text-left p-5 rounded-2xl border-2 transition-all duration-200 group hover:shadow-lg cursor-pointer ${getConfidenceBgColor(alt.confidence)}`}
                   >
                     {/* Option badge */}
                     <div className="flex items-center justify-between mb-3">
