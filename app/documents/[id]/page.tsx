@@ -813,6 +813,7 @@ export default function DocumentDetailPage() {
                       onClick={() => {
                         setSelectedFieldForPDF(field)
                         setPdfSidebarOpen(true)
+                        setPdfAutoCloseToken(prev => prev + 1)
                       }}
                     >
                       <div className="flex items-start justify-between gap-4">
@@ -825,6 +826,7 @@ export default function DocumentDetailPage() {
                                 if (window.innerWidth >= 1024) {
                                   setSelectedFieldForPDF(field)
                                   setPdfSidebarOpen(true)
+                                  setPdfAutoCloseToken(prev => prev + 1)
                                 }
                               }}
                             >
@@ -877,6 +879,7 @@ export default function DocumentDetailPage() {
                               e.stopPropagation()
                               setSelectedFieldForPDF(field)
                               setPdfSidebarOpen(true)
+                              setPdfAutoCloseToken(prev => prev + 1)
                             }}
                             className="lg:hidden p-2.5 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-all"
                             title="View in PDF"
@@ -886,6 +889,7 @@ export default function DocumentDetailPage() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
+                              setPdfSidebarOpen(false)
                               setEditingField(field)
                               setIsEditModalOpen(true)
                             }}
@@ -897,6 +901,7 @@ export default function DocumentDetailPage() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
+                              setPdfSidebarOpen(false)
                               handleDeleteField(field.fieldId)
                             }}
                             className="p-2.5 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
@@ -909,6 +914,7 @@ export default function DocumentDetailPage() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation()
+                                  setPdfSidebarOpen(false)
                                   handleThumbsUp(field)
                                 }}
                                 disabled={feedbackLoading === field.id || (field.feedbackAttemptCount || 0) >= 2}
@@ -926,6 +932,7 @@ export default function DocumentDetailPage() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation()
+                                  setPdfSidebarOpen(false)
                                   handleThumbsDown(field)
                                 }}
                                 disabled={feedbackLoading === field.id || (field.feedbackAttemptCount || 0) >= 2}
