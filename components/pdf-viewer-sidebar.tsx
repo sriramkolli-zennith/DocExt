@@ -388,7 +388,7 @@ export function PDFViewerSidebar({
 
   // When field changes (autoCloseToken increments), redraw annotations and scroll
   useEffect(() => {
-    if (!isOpen || autoCloseToken === 0 || pdfLoading || pdfError) return
+    if (!isOpen || pdfLoading || pdfError) return
     
     if (annotationTargets.length === 0) {
       latestAnnotationsRef.current = []
