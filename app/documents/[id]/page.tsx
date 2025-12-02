@@ -81,6 +81,7 @@ export default function DocumentDetailPage() {
   const [pdfAutoCloseEnabled, setPdfAutoCloseEnabled] = useState(false)
   const [pdfAutoCloseToken, setPdfAutoCloseToken] = useState(0)
   const [selectedFieldForPDF, setSelectedFieldForPDF] = useState<ExtractedField | null>(null)
+  const [pendingFieldForPDF, setPendingFieldForPDF] = useState<ExtractedField | null>(null)
   const [feedbackLoading, setFeedbackLoading] = useState<string | null>(null)
   const [editingField, setEditingField] = useState<ExtractedField | null>(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
@@ -113,6 +114,24 @@ export default function DocumentDetailPage() {
     return () => clearTimeout(timer)
   }, [inlineFeedback])
 
+  // Handle pending field for PDF sidebar - reopen after close animation
+  useEffect(() => {
+    if (pendingFieldForPDF) {
+      const timer = setTimeout(() => {
+        // First clear the current field to force a fresh render
+        setSelectedFieldForPDF(null)
+        // Then set the new field on next tick
+        setTimeout(() => {
+          setSelectedFieldForPDF(pendingFieldForPDF)
+          setPdfSidebarOpen(true)
+          setPdfAutoCloseToken(prev => prev + 1)
+          setPendingFieldForPDF(null)
+        }, 50)
+      }, 350) // Wait for close animation to complete
+      return () => clearTimeout(timer)
+    }
+  }, [pendingFieldForPDF])
+
   // Helper functions for custom alerts
   const showAlert = (
     title: string,
@@ -133,6 +152,23 @@ export default function DocumentDetailPage() {
   ) => {
     setAlertConfig({ title, description, type, onConfirm, confirmText, cancelText })
     setAlertOpen(true)
+  }
+
+  // Handle field card click - close and reopen if different field
+  const handleFieldCardClick = (field: ExtractedField) => {
+    if (!pdfSidebarOpen) {
+      // Sidebar closed - open immediately
+      setSelectedFieldForPDF(field)
+      setPdfSidebarOpen(true)
+      setPdfAutoCloseToken(prev => prev + 1)
+    } else if (selectedFieldForPDF?.id === field.id) {
+      // Same field - do nothing
+      return
+    } else {
+      // Different field - close, then reopen
+      setPdfSidebarOpen(false)
+      setPendingFieldForPDF(field)
+    }
   }
 
   useEffect(() => {
@@ -816,11 +852,7 @@ export default function DocumentDetailPage() {
                     <div
                       key={field.id}
                       className="group relative px-5 py-4 hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-all duration-200 cursor-pointer"
-                      onClick={() => {
-                        setSelectedFieldForPDF(field)
-                        setPdfSidebarOpen(true)
-                        setPdfAutoCloseToken(prev => prev + 1)
-                      }}
+                      onClick={() => handleFieldCardClick(field)}
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0 space-y-1.5">
@@ -829,7 +861,7 @@ export default function DocumentDetailPage() {
                             <span
                               className="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors"
                               onMouseEnter={() => {
-                                if (window.innerWidth >= 1024) {
+                                if (window.innerWidth >= 1024 && !pdfSidebarOpen) {
                                   setSelectedFieldForPDF(field)
                                   setPdfSidebarOpen(true)
                                   setPdfAutoCloseToken(prev => prev + 1)
@@ -883,9 +915,7 @@ export default function DocumentDetailPage() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
-                              setSelectedFieldForPDF(field)
-                              setPdfSidebarOpen(true)
-                              setPdfAutoCloseToken(prev => prev + 1)
+                              handleFieldCardClick(field)
                             }}
                             className="lg:hidden p-2.5 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-all cursor-pointer"
                             title="View in PDF"
@@ -1069,6 +1099,7 @@ export default function DocumentDetailPage() {
           isOpen={pdfSidebarOpen}
           onClose={() => {
             setPdfSidebarOpen(false)
+            setPendingFieldForPDF(null)
             setTimeout(() => setSelectedFieldForPDF(null), 300)
           }}
           pdfUrl={supabase.storage.from('documents').getPublicUrl(document.storagePath).data.publicUrl}

@@ -93,6 +93,7 @@ export function HomeHero({ user, loading }: { user: any; loading: boolean }) {
         {[...Array(20)].map((_, i) => (
           <div
             key={i}
+            suppressHydrationWarning
             className="absolute w-2 h-2 bg-indigo-500/20 dark:bg-indigo-400/20 rounded-full animate-[float-particle_15s_ease-in-out_infinite]"
             style={{
               left: `${Math.random() * 100}%`,
@@ -693,6 +694,7 @@ export function HomeCallToAction({ user }: { user: any }) {
             {[...Array(15)].map((_, i) => (
               <div
                 key={i}
+                suppressHydrationWarning
                 className="absolute w-1 h-1 bg-white/20 rounded-full animate-[float-particle_15s_ease-in-out_infinite]"
                 style={{
                   left: `${Math.random() * 100}%`,
