@@ -835,20 +835,9 @@ export function HomeFooter() {
         </div>
         
         {/* Bottom bar */}
-        <div className={`pt-8 border-t border-slate-200/60 dark:border-slate-800/60 flex flex-col sm:flex-row justify-between items-center gap-4 transition-all duration-700 delay-200 ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+        <div className={`pt-8 border-t border-slate-200/60 dark:border-slate-800/60 flex flex-col sm:flex-row justify-center items-center gap-4 transition-all duration-700 delay-200 ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <p className="text-sm text-slate-500 dark:text-slate-500">
             © {currentYear} DocExtract. All rights reserved.
-          </p>
-          <p className="text-sm text-slate-500 dark:text-slate-500 flex items-center gap-1">
-            Built with <span className="text-red-500 animate-pulse">❤️</span> by{" "}
-            <a 
-              href="https://github.com/sriramkolli-zennith" 
-              className="text-indigo-600 dark:text-indigo-400 hover:underline hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Zennith AI
-            </a>
           </p>
         </div>
       </div>
